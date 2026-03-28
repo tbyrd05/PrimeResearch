@@ -1,0 +1,18 @@
+export const labImages = [
+  { title: 'BPC-157 Test', src: '/bpc test.jpeg' },
+  { title: 'BPC-157/TB-500 Blend Test', src: '/blend test.png' },
+  { title: 'CJC-1295 No DAC Test', src: '/cjc Ndac test.png' },
+  { title: 'CJC-1295 w/DAC Test', src: '/cjc Wdac test.png' },
+  { title: 'GHK-Cu Test', src: '/ghk test.png' },
+  { title: 'Glow Blend Test', src: '/glow test.jpeg' },
+  { title: 'Ipamorelin Test', src: '/ipa test.png' },
+  { title: 'Klow Blend Test', src: '/klow test.png' },
+  { title: 'MT-2 Test', src: '/mt2 test.png' },
+  { title: 'Retatrutide Test', src: '/reta test.jpeg' },
+  { title: 'Selank Test', src: '/selank test.png' },
+  { title: 'Semaglutide Test', src: '/sema test.jpeg' },
+  { title: 'Semax Test', src: '/semax test.png' },
+  { title: 'TB-500 Test', src: '/tb test.png' },
+  { title: 'Tesamorelin Test', src: '/tesa test.png' },
+  { title: 'Tirzepatide Test', src: '/tirz test.png' },
+];

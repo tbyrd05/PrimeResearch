@@ -1,0 +1,374 @@
+import React, { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import Navbar from '../components/Navbar';
+import ProductArtwork from '../components/ProductArtwork';
+import { useCart } from '../context/CartContext';
+import { useOrders } from '../context/OrdersContext';
+import { products } from '../data/products';
+
+export default function Cart() {
+  const { items, itemCount, subtotal, formattedSubtotal, updateQuantity, removeItem, clearCart, formatPrice } = useCart();
+  const { placeOrder } = useOrders();
+  const [checkout, setCheckout] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+    state: '',
+    zip: '',
+  });
+  const [paymentMethod, setPaymentMethod] = useState('card');
+  const [paymentDetails, setPaymentDetails] = useState({
+    cardName: '',
+    cardNumber: '',
+    expiry: '',
+    cvv: '',
+    bitcoinWallet: '',
+  });
+  const [checkoutComplete, setCheckoutComplete] = useState(false);
+
+  const shipping = itemCount > 0 ? 20 : 0;
+  const total = subtotal + shipping;
+  const cartItems = useMemo(
+    () => items.map((item) => ({
+      ...item,
+      product: products.find((product) => product.id === item.productId),
+      lineTotal: formatPrice((Number(item.quantity) || 0) * (Number.parseFloat(String(item.price).replace(/[^0-9.]/g, '')) || 0)),
+    })),
+    [formatPrice, items]
+  );
+
+  function handleCheckoutSubmit(event) {
+    event.preventDefault();
+    const orderId = `PR-${Date.now()}`;
+    const paymentSummary = paymentMethod === 'card'
+      ? {
+          label: 'Credit or Debit Card',
+          detail: paymentDetails.cardNumber ? `Card ending in ${paymentDetails.cardNumber.slice(-4)}` : 'Card details submitted',
+        }
+      : {
+          label: 'Bitcoin',
+          detail: paymentDetails.bitcoinWallet ? `Wallet ending in ${paymentDetails.bitcoinWallet.slice(-6)}` : 'Bitcoin wallet submitted',
+        };
+
+    placeOrder({
+      id: orderId,
+      placedAt: new Date().toLocaleString(),
+      customer: {
+        fullName: checkout.fullName,
+        email: checkout.email,
+        phone: checkout.phone,
+        address: checkout.address,
+        city: checkout.city,
+        state: checkout.state,
+        zip: checkout.zip,
+      },
+      payment: paymentSummary,
+      items: cartItems,
+      subtotal: formattedSubtotal,
+      shipping: formatPrice(shipping),
+      total: formatPrice(total),
+    });
+    setCheckoutComplete(true);
+    clearCart();
+  }
+
+  return (
+    <div className="min-h-screen bg-neutral-50 font-sans">
+      <Navbar />
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <nav className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-neutral-400 mb-8">
+          <Link to="/" className="hover:text-primary transition-colors">Home</Link>
+          <span>/</span>
+          <Link to="/catalog" className="hover:text-primary transition-colors">Catalog</Link>
+          <span>/</span>
+          <span className="text-neutral-800">Cart</span>
+        </nav>
+
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-10">
+          <div>
+            <h1 className="text-4xl font-extrabold text-navy-dark tracking-tighter">Your Cart</h1>
+            <p className="mt-2 text-neutral-500 font-medium">Review your selections, adjust quantity, and complete checkout.</p>
+          </div>
+          <Link to="/catalog" className="text-sm font-bold uppercase tracking-widest text-primary hover:text-primary-hover transition-colors">
+            Continue Shopping
+          </Link>
+        </div>
+
+        {checkoutComplete && (
+          <div className="mb-8 rounded-2xl border border-emerald-200 bg-emerald-50 px-6 py-5">
+            <p className="text-sm font-black uppercase tracking-widest text-emerald-700 mb-1">Order Completed</p>
+            <p className="text-neutral-700 font-medium">Your shipping number will be emailed once your order has shipped.</p>
+          </div>
+        )}
+
+        {cartItems.length === 0 ? (
+          <div className="bg-white border border-neutral-200 rounded-2xl p-10 text-center shadow-sm">
+            <p className="text-xl font-extrabold text-navy-dark mb-3">Your cart is empty.</p>
+            <p className="text-neutral-500 font-medium mb-6">Add products from the catalog to begin checkout.</p>
+            <Link to="/catalog" className="inline-flex items-center justify-center bg-navy-dark text-white px-6 py-3 rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-primary transition-colors">
+              Browse Catalog
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 xl:grid-cols-[1.5fr_0.9fr] gap-8">
+            <section className="space-y-5">
+              {cartItems.map((item) => (
+                <div key={`${item.productId}-${item.size}`} className="bg-white border border-neutral-200 rounded-2xl p-5 shadow-sm">
+                  <div className="flex flex-col md:flex-row gap-5">
+                    <div className="w-full md:w-40 shrink-0">
+                      <ProductArtwork
+                        product={item.product || { id: item.productId, name: item.name, mg: item.size }}
+                        sizeLabel={item.size}
+                        compact
+                        className="rounded-2xl"
+                        imageClassName="scale-[1.08]"
+                      />
+                    </div>
+
+                    <div className="flex-1 flex flex-col justify-between gap-5">
+                      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                        <div>
+                          <h2 className="text-2xl font-extrabold tracking-tight text-navy-dark uppercase">{item.name}</h2>
+                          <p className="text-xs font-bold uppercase tracking-widest text-neutral-400 mt-2">Size: {item.size}</p>
+                          <p className="text-sm font-bold text-neutral-500 mt-3">Unit Price: {item.price}</p>
+                        </div>
+                        <div className="text-left md:text-right">
+                          <p className="text-xs font-bold uppercase tracking-widest text-neutral-400">Line Total</p>
+                          <p className="text-2xl font-black text-primary mt-1">{item.lineTotal}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div className="inline-flex items-center border border-neutral-200 rounded-xl overflow-hidden w-fit">
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity(item.productId, item.size, item.quantity - 1)}
+                            className="px-4 py-3 text-navy-dark hover:bg-neutral-100 transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-lg">remove</span>
+                          </button>
+                          <input
+                            type="number"
+                            min="1"
+                            value={item.quantity}
+                            onChange={(event) => updateQuantity(item.productId, item.size, event.target.value)}
+                            className="w-16 text-center font-bold text-navy-dark border-x border-neutral-200 py-3 outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity(item.productId, item.size, item.quantity + 1)}
+                            className="px-4 py-3 text-navy-dark hover:bg-neutral-100 transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-lg">add</span>
+                          </button>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => removeItem(item.productId, item.size)}
+                          className="text-sm font-bold uppercase tracking-widest text-neutral-400 hover:text-red-500 transition-colors"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </section>
+
+            <aside className="space-y-6">
+              <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
+                <h2 className="text-xl font-extrabold tracking-tight text-navy-dark mb-6">Order Summary</h2>
+                <div className="space-y-4 text-sm font-bold">
+                  <div className="flex items-center justify-between text-neutral-500">
+                    <span>Items</span>
+                    <span>{itemCount}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-neutral-500">
+                    <span>Subtotal</span>
+                    <span>{formattedSubtotal}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-neutral-500">
+                    <span>Shipping</span>
+                    <span>{formatPrice(shipping)}</span>
+                  </div>
+                  <div className="pt-4 border-t border-neutral-200 flex items-center justify-between text-navy-dark">
+                    <span className="uppercase tracking-widest text-xs">Total</span>
+                    <span className="text-2xl font-black text-primary">{formatPrice(total)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <form onSubmit={handleCheckoutSubmit} className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm space-y-4">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400 mb-2">Checkout</p>
+                  <h2 className="text-xl font-extrabold tracking-tight text-navy-dark">Research Checkout</h2>
+                </div>
+
+                <input
+                  required
+                  type="text"
+                  placeholder="Full Name"
+                  value={checkout.fullName}
+                  onChange={(event) => setCheckout((current) => ({ ...current, fullName: event.target.value }))}
+                  className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none focus:border-primary"
+                />
+                <input
+                  required
+                  type="email"
+                  placeholder="Email Address"
+                  value={checkout.email}
+                  onChange={(event) => setCheckout((current) => ({ ...current, email: event.target.value }))}
+                  className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none focus:border-primary"
+                />
+                <input
+                  required
+                  type="tel"
+                  placeholder="Phone Number"
+                  value={checkout.phone}
+                  onChange={(event) => setCheckout((current) => ({ ...current, phone: event.target.value }))}
+                  className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none focus:border-primary"
+                />
+                <input
+                  required
+                  type="text"
+                  placeholder="Shipping Address"
+                  value={checkout.address}
+                  onChange={(event) => setCheckout((current) => ({ ...current, address: event.target.value }))}
+                  className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none focus:border-primary"
+                />
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <input
+                    required
+                    type="text"
+                    placeholder="City"
+                    value={checkout.city}
+                    onChange={(event) => setCheckout((current) => ({ ...current, city: event.target.value }))}
+                    className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none focus:border-primary"
+                  />
+                  <input
+                    required
+                    type="text"
+                    placeholder="State"
+                    value={checkout.state}
+                    onChange={(event) => setCheckout((current) => ({ ...current, state: event.target.value }))}
+                    className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none focus:border-primary"
+                  />
+                  <input
+                    required
+                    type="text"
+                    placeholder="ZIP"
+                    value={checkout.zip}
+                    onChange={(event) => setCheckout((current) => ({ ...current, zip: event.target.value }))}
+                    className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none focus:border-primary"
+                  />
+                </div>
+
+                <div className="pt-2">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400 mb-3">Payment Method</p>
+                  <div className="grid grid-cols-1 gap-3">
+                    <label className={`flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-4 transition-colors ${paymentMethod === 'card' ? 'border-primary bg-primary/5' : 'border-neutral-200 bg-neutral-50'}`}>
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value="card"
+                        checked={paymentMethod === 'card'}
+                        onChange={(event) => setPaymentMethod(event.target.value)}
+                        className="mt-1"
+                      />
+                      <div>
+                        <p className="text-sm font-black uppercase tracking-widest text-navy-dark">Credit or Debit Card</p>
+                        <p className="mt-1 text-sm text-neutral-500">Enter card details directly during checkout.</p>
+                      </div>
+                    </label>
+
+                    <label className={`flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-4 transition-colors ${paymentMethod === 'bitcoin' ? 'border-primary bg-primary/5' : 'border-neutral-200 bg-neutral-50'}`}>
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value="bitcoin"
+                        checked={paymentMethod === 'bitcoin'}
+                        onChange={(event) => setPaymentMethod(event.target.value)}
+                        className="mt-1"
+                      />
+                      <div>
+                        <p className="text-sm font-black uppercase tracking-widest text-navy-dark">Bitcoin</p>
+                        <p className="mt-1 text-sm text-neutral-500">Enter your Bitcoin wallet and finish payment after order submission.</p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {paymentMethod === 'card' ? (
+                  <div className="space-y-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+                    <input
+                      required
+                      type="text"
+                      placeholder="Name on Card"
+                      value={paymentDetails.cardName}
+                      onChange={(event) => setPaymentDetails((current) => ({ ...current, cardName: event.target.value }))}
+                      className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 outline-none focus:border-primary"
+                    />
+                    <input
+                      required
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="Card Number"
+                      value={paymentDetails.cardNumber}
+                      onChange={(event) => setPaymentDetails((current) => ({ ...current, cardNumber: event.target.value }))}
+                      className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 outline-none focus:border-primary"
+                    />
+                    <div className="grid grid-cols-2 gap-3">
+                      <input
+                        required
+                        type="text"
+                        placeholder="MM/YY"
+                        value={paymentDetails.expiry}
+                        onChange={(event) => setPaymentDetails((current) => ({ ...current, expiry: event.target.value }))}
+                        className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 outline-none focus:border-primary"
+                      />
+                      <input
+                        required
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="CVV"
+                        value={paymentDetails.cvv}
+                        onChange={(event) => setPaymentDetails((current) => ({ ...current, cvv: event.target.value }))}
+                        className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 outline-none focus:border-primary"
+                      />
+                    </div>
+                  </div>
+                ) : null}
+
+                {paymentMethod === 'bitcoin' ? (
+                  <div className="space-y-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+                    <input
+                      required
+                      type="text"
+                      placeholder="Bitcoin Wallet Address"
+                      value={paymentDetails.bitcoinWallet}
+                      onChange={(event) => setPaymentDetails((current) => ({ ...current, bitcoinWallet: event.target.value }))}
+                      className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 outline-none focus:border-primary"
+                    />
+                    <p className="text-sm font-medium text-neutral-500">We will use this wallet information to match your Bitcoin payment after checkout is submitted.</p>
+                  </div>
+                ) : null}
+
+                <button
+                  type="submit"
+                  className="w-full bg-navy-dark text-white py-4 px-6 rounded-xl font-black uppercase tracking-[0.18em] text-xs hover:bg-primary transition-colors"
+                >
+                  Complete Checkout
+                </button>
+              </form>
+            </aside>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
