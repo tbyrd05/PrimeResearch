@@ -9,15 +9,15 @@ function FaqItem({ item, isOpen, onToggle }) {
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left"
+        className="flex w-full items-center justify-between gap-4 px-4 py-4 text-left sm:px-6 sm:py-5"
       >
-        <span className="text-base font-extrabold uppercase tracking-tight text-navy-dark">{item.question}</span>
+        <span className="text-sm font-extrabold uppercase tracking-tight text-navy-dark sm:text-base">{item.question}</span>
         <span className="material-symbols-outlined text-neutral-400">
           {isOpen ? 'remove' : 'add'}
         </span>
       </button>
       {isOpen ? (
-        <div className="px-6 pb-6 text-sm font-medium leading-relaxed text-neutral-600">
+        <div className="px-4 pb-4 text-sm font-medium leading-relaxed text-neutral-600 sm:px-6 sm:pb-6">
           {item.answer}
         </div>
       ) : null}
@@ -34,21 +34,21 @@ export default function Support() {
     <div className="min-h-screen bg-neutral-50 font-sans">
       <Navbar />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <nav className="mb-8 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-neutral-400">
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
+        <nav className="mb-6 flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-widest text-neutral-400 sm:mb-8">
           <Link to="/" className="hover:text-primary transition-colors">Home</Link>
           <span>/</span>
           <span className="text-neutral-800">Support</span>
         </nav>
 
-        <header className="mb-12 max-w-3xl">
-          <h1 className="text-4xl font-extrabold uppercase tracking-tighter text-navy-dark">Support</h1>
-          <p className="mt-3 text-lg font-medium text-neutral-500">
+        <header className="mb-8 max-w-3xl sm:mb-12">
+          <h1 className="text-3xl font-extrabold uppercase tracking-tighter text-navy-dark sm:text-4xl">Support</h1>
+          <p className="mt-3 text-base font-medium text-neutral-500 sm:text-lg">
             Answers to common questions, plus a direct place for customers to contact you about orders, products, and test documentation.
           </p>
         </header>
 
-        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1.2fr_0.8fr]">
+        <div className="grid grid-cols-1 gap-6 sm:gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:gap-10">
           <section className="space-y-4">
             {faqItems.map((item, index) => (
               <FaqItem
@@ -61,9 +61,9 @@ export default function Support() {
           </section>
 
           <aside className="space-y-6">
-            <div className="rounded-3xl bg-navy-dark p-8 text-white shadow-xl">
+            <div className="rounded-3xl bg-navy-dark p-5 text-white shadow-xl sm:p-8">
               <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">Contact</p>
-              <h2 className="mt-3 text-3xl font-extrabold uppercase tracking-tight">Need Help?</h2>
+              <h2 className="mt-3 text-2xl font-extrabold uppercase tracking-tight sm:text-3xl">Need Help?</h2>
               <p className="mt-4 text-sm font-medium leading-relaxed text-slate-300">
                 {supportConfig.responseWindow}
               </p>
@@ -110,7 +110,7 @@ export default function Support() {
               ) : null}
             </div>
 
-            <div className="rounded-3xl border border-neutral-200 bg-white p-8 shadow-sm">
+            <div className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-8">
               <p className="text-xs font-black uppercase tracking-[0.25em] text-neutral-400">Quick Help</p>
               <ul className="mt-4 space-y-3 text-sm font-medium text-neutral-600">
                 <li>Include your order number when asking about shipping.</li>

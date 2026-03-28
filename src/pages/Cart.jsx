@@ -78,8 +78,8 @@ export default function Cart() {
     <div className="min-h-screen bg-neutral-50 font-sans">
       <Navbar />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <nav className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-neutral-400 mb-8">
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
+        <nav className="mb-6 flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-widest text-neutral-400 sm:mb-8">
           <Link to="/" className="hover:text-primary transition-colors">Home</Link>
           <span>/</span>
           <Link to="/catalog" className="hover:text-primary transition-colors">Catalog</Link>
@@ -87,10 +87,10 @@ export default function Cart() {
           <span className="text-neutral-800">Cart</span>
         </nav>
 
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-10">
+        <div className="mb-8 flex flex-col gap-4 lg:mb-10 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h1 className="text-4xl font-extrabold text-navy-dark tracking-tighter">Your Cart</h1>
-            <p className="mt-2 text-neutral-500 font-medium">Review your selections, adjust quantity, and complete checkout.</p>
+            <h1 className="text-3xl font-extrabold tracking-tighter text-navy-dark sm:text-4xl">Your Cart</h1>
+            <p className="mt-2 text-sm font-medium text-neutral-500 sm:text-base">Review your selections, adjust quantity, and complete checkout.</p>
           </div>
           <Link to="/catalog" className="text-sm font-bold uppercase tracking-widest text-primary hover:text-primary-hover transition-colors">
             Continue Shopping
@@ -113,12 +113,12 @@ export default function Cart() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 xl:grid-cols-[1.5fr_0.9fr] gap-8">
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.5fr_0.9fr] xl:gap-8">
             <section className="space-y-5">
               {cartItems.map((item) => (
-                <div key={`${item.productId}-${item.size}`} className="bg-white border border-neutral-200 rounded-2xl p-5 shadow-sm">
-                  <div className="flex flex-col md:flex-row gap-5">
-                    <div className="w-full md:w-40 shrink-0">
+                <div key={`${item.productId}-${item.size}`} className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-5">
+                  <div className="flex flex-col gap-5 md:flex-row">
+                    <div className="w-full shrink-0 md:w-40">
                       <ProductArtwork
                         product={item.product || { id: item.productId, name: item.name, mg: item.size }}
                         sizeLabel={item.size}
@@ -128,10 +128,10 @@ export default function Cart() {
                       />
                     </div>
 
-                    <div className="flex-1 flex flex-col justify-between gap-5">
-                      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                    <div className="flex flex-1 flex-col justify-between gap-5">
+                      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                         <div>
-                          <h2 className="text-2xl font-extrabold tracking-tight text-navy-dark uppercase">{item.name}</h2>
+                          <h2 className="break-words text-xl font-extrabold uppercase tracking-tight text-navy-dark sm:text-2xl">{item.name}</h2>
                           <p className="text-xs font-bold uppercase tracking-widest text-neutral-400 mt-2">Size: {item.size}</p>
                           <p className="text-sm font-bold text-neutral-500 mt-3">Unit Price: {item.price}</p>
                         </div>
@@ -141,8 +141,8 @@ export default function Cart() {
                         </div>
                       </div>
 
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <div className="inline-flex items-center border border-neutral-200 rounded-xl overflow-hidden w-fit">
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="inline-flex w-fit max-w-full items-center overflow-hidden rounded-xl border border-neutral-200">
                           <button
                             type="button"
                             onClick={() => updateQuantity(item.productId, item.size, item.quantity - 1)}
@@ -155,7 +155,7 @@ export default function Cart() {
                             min="1"
                             value={item.quantity}
                             onChange={(event) => updateQuantity(item.productId, item.size, event.target.value)}
-                            className="w-16 text-center font-bold text-navy-dark border-x border-neutral-200 py-3 outline-none"
+                            className="w-14 border-x border-neutral-200 py-3 text-center font-bold text-navy-dark outline-none sm:w-16"
                           />
                           <button
                             type="button"
@@ -181,7 +181,7 @@ export default function Cart() {
             </section>
 
             <aside className="space-y-6">
-              <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
+              <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6">
                 <h2 className="text-xl font-extrabold tracking-tight text-navy-dark mb-6">Order Summary</h2>
                 <div className="space-y-4 text-sm font-bold">
                   <div className="flex items-center justify-between text-neutral-500">
@@ -203,7 +203,7 @@ export default function Cart() {
                 </div>
               </div>
 
-              <form onSubmit={handleCheckoutSubmit} className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm space-y-4">
+              <form onSubmit={handleCheckoutSubmit} className="space-y-4 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400 mb-2">Checkout</p>
                   <h2 className="text-xl font-extrabold tracking-tight text-navy-dark">Research Checkout</h2>
@@ -241,7 +241,7 @@ export default function Cart() {
                   onChange={(event) => setCheckout((current) => ({ ...current, address: event.target.value }))}
                   className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none focus:border-primary"
                 />
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                   <input
                     required
                     type="text"
@@ -322,7 +322,7 @@ export default function Cart() {
                       onChange={(event) => setPaymentDetails((current) => ({ ...current, cardNumber: event.target.value }))}
                       className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 outline-none focus:border-primary"
                     />
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <input
                         required
                         type="text"

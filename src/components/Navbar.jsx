@@ -12,7 +12,7 @@ export default function Navbar() {
   const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
   const navLinkClass = ({ isActive }) =>
     [
-      'text-sm font-bold transition-colors uppercase tracking-widest',
+      'text-xs sm:text-sm font-bold transition-colors uppercase tracking-widest',
       isActive ? 'text-white' : 'text-slate-400 hover:text-white',
     ].join(' ');
 
@@ -31,52 +31,57 @@ export default function Navbar() {
 
   return (
     <nav className="bg-navy-dark text-white sticky top-0 z-50 shadow-lg">
-      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
-        <div className="flex items-center justify-between h-20">
-          <div className="flex items-center gap-4 lg:gap-6">
-            <Link to="/" className="flex items-center gap-2 -ml-2 group">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
+        <div className="flex flex-col gap-3 py-3">
+          <div className="flex items-center justify-between gap-3">
+            <Link to="/" className="flex min-w-0 items-center gap-2 group">
               <div className="w-10 h-10 bg-primary rounded flex flex-shrink-0 items-center justify-center">
                 <span className="material-symbols-outlined text-white text-2xl">biotech</span>
               </div>
-              <span className="text-xl font-extrabold tracking-tighter uppercase whitespace-nowrap">Prime Research</span>
+              <span className="truncate text-base sm:text-xl font-extrabold tracking-tighter uppercase">Prime Research</span>
             </Link>
-            
-            <div className="hidden md:flex items-center gap-6">
-              <NavLink to="/catalog" className={navLinkClass}>Catalog</NavLink>
-              <NavLink to="/lab-results" className={navLinkClass}>COAs and Test Results</NavLink>
-              <NavLink to="/support" className={navLinkClass}>Support</NavLink>
-              {isOwner ? <NavLink to="/owner/orders" className={navLinkClass}>Orders</NavLink> : null}
-            </div>
-          </div>
 
-          <div className="flex items-center gap-6">
-            <form
-              onSubmit={submitSearch}
-              className="hidden lg:flex items-center bg-white/5 border border-white/10 px-4 py-2 rounded-lg group focus-within:bg-white/10 transition-colors"
-            >
-              <span className="material-symbols-outlined text-slate-400 text-sm mr-2">search</span>
-              <input 
-                type="text" 
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Search compounds..." 
-                className="bg-transparent border-none text-sm focus:ring-0 w-48 text-white placeholder:text-slate-500 font-medium"
-              />
-            </form>
-            
-            <div className="flex items-center gap-4">
-              <Link to="/cart" className="relative hover:text-primary transition-colors">
+            <div className="flex shrink-0 items-center gap-2 sm:gap-4">
+              <Link to="/cart" className="relative rounded-lg p-1.5 hover:text-primary transition-colors">
                 <span className="material-symbols-outlined">shopping_cart</span>
                 <span className="absolute -top-2 -right-2 bg-primary text-[10px] font-bold px-1.5 py-0.5 rounded-full">{itemCount}</span>
               </Link>
               <button
                 type="button"
                 onClick={signOut}
-                className="bg-primary hover:bg-primary-hover px-5 py-2 text-sm font-bold rounded-lg transition-all active:scale-95"
+                className="bg-primary hover:bg-primary-hover px-3 sm:px-5 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all active:scale-95"
               >
                 {user ? 'Sign Out' : 'Account'}
               </button>
             </div>
+          </div>
+
+          <form
+            onSubmit={submitSearch}
+            className="flex items-center bg-white/5 border border-white/10 px-3 sm:px-4 py-2.5 rounded-xl group focus-within:bg-white/10 transition-colors"
+          >
+            <span className="material-symbols-outlined text-slate-400 text-sm mr-2 shrink-0">search</span>
+            <input 
+              type="text" 
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Search compounds..." 
+              className="bg-transparent border-none text-sm focus:ring-0 w-full text-white placeholder:text-slate-500 font-medium"
+            />
+          </form>
+
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 md:hidden">
+            <NavLink to="/catalog" className={navLinkClass}>Catalog</NavLink>
+            <NavLink to="/lab-results" className={navLinkClass}>COAs and Test Results</NavLink>
+            <NavLink to="/support" className={navLinkClass}>Support</NavLink>
+            {isOwner ? <NavLink to="/owner/orders" className={navLinkClass}>Orders</NavLink> : null}
+          </div>
+
+          <div className="hidden md:flex items-center gap-6">
+            <NavLink to="/catalog" className={navLinkClass}>Catalog</NavLink>
+            <NavLink to="/lab-results" className={navLinkClass}>COAs and Test Results</NavLink>
+            <NavLink to="/support" className={navLinkClass}>Support</NavLink>
+            {isOwner ? <NavLink to="/owner/orders" className={navLinkClass}>Orders</NavLink> : null}
           </div>
         </div>
       </div>

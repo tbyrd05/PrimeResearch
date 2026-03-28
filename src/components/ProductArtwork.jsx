@@ -33,12 +33,12 @@ export default function ProductArtwork({ product, compact = false, className = '
         .filter(Boolean)
         .join(' ')}
     >
-      <div className="absolute inset-0 flex items-center justify-center p-1 sm:p-2">
+      <div className="absolute inset-0 flex items-center justify-center p-2">
         <img
           src={src}
           alt={product?.name || 'Prime Research vial'}
           className={[
-            'block h-auto w-auto max-h-[112%] max-w-[100%] object-contain object-center',
+            'block h-auto w-auto max-h-full max-w-full object-contain object-center',
             imageClassName,
           ]
             .filter(Boolean)

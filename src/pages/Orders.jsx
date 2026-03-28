@@ -10,15 +10,15 @@ export default function Orders() {
 
   function renderOrderCard(order, showMarkAsSent) {
     return (
-      <section key={order.id} className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-6">
+      <section key={order.id} className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-6">
+        <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.2em] text-neutral-400 mb-2">Order ID</p>
-            <p className="text-xl font-extrabold text-navy-dark">{order.id}</p>
+            <p className="break-all text-lg font-extrabold text-navy-dark sm:text-xl">{order.id}</p>
             <p className="mt-2 text-sm font-medium text-neutral-500">{order.placedAt}</p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-4 sm:items-start lg:min-w-[34rem]">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start lg:min-w-[34rem]">
+            <div className="grid flex-1 grid-cols-1 gap-4 sm:grid-cols-3">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.2em] text-neutral-400 mb-2">Customer</p>
                 <p className="text-sm font-bold text-navy-dark">{order.customer.fullName}</p>
@@ -58,7 +58,7 @@ export default function Orders() {
           </div>
         </div>
 
-        <div className="mb-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
           <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
             <p className="text-xs font-black uppercase tracking-[0.2em] text-neutral-400 mb-3">Customer Details</p>
             <div className="space-y-2 text-sm">
@@ -96,7 +96,7 @@ export default function Orders() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="min-w-full text-left">
+          <table className="min-w-[40rem] text-left">
             <thead>
               <tr className="border-b border-neutral-200 text-xs font-black uppercase tracking-[0.2em] text-neutral-400">
                 <th className="py-3 pr-4">Item</th>
@@ -127,15 +127,15 @@ export default function Orders() {
     <div className="min-h-screen bg-neutral-50 font-sans">
       <Navbar />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <nav className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-neutral-400 mb-8">
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
+        <nav className="mb-6 flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-widest text-neutral-400 sm:mb-8">
           <Link to="/" className="hover:text-primary transition-colors">Home</Link>
           <span>/</span>
           <span className="text-neutral-800">Orders</span>
         </nav>
 
-        <header className="mb-10">
-          <h1 className="text-4xl font-extrabold text-navy-dark tracking-tighter">Orders</h1>
+        <header className="mb-8 sm:mb-10">
+          <h1 className="text-3xl font-extrabold tracking-tighter text-navy-dark sm:text-4xl">Orders</h1>
           <p className="mt-2 text-neutral-500 font-medium">Owner view for all placed orders.</p>
         </header>
 
@@ -147,7 +147,7 @@ export default function Orders() {
         ) : (
           <div className="space-y-10">
             <section>
-              <div className="mb-5 flex items-center justify-between gap-4">
+              <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h2 className="text-2xl font-extrabold tracking-tight text-navy-dark">Pending Orders</h2>
                   <p className="mt-1 text-sm font-medium text-neutral-500">Orders waiting to be shipped.</p>
@@ -170,7 +170,7 @@ export default function Orders() {
             </section>
 
             <section>
-              <div className="mb-5 flex items-center justify-between gap-4">
+              <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h2 className="text-2xl font-extrabold tracking-tight text-navy-dark">Sent Orders</h2>
                   <p className="mt-1 text-sm font-medium text-neutral-500">Orders you have already marked as sent.</p>

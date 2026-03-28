@@ -50,25 +50,25 @@ export default function Catalog() {
     <div className="min-h-screen bg-neutral-50 font-sans">
       <Navbar />
 
-      <header className="bg-white border-b border-neutral-200 py-12">
+      <header className="bg-white border-b border-neutral-200 py-8 sm:py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-5 sm:gap-6">
             <div>
               <nav className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-neutral-400 mb-4">
                 <Link to="/" className="hover:text-primary transition-colors">Home</Link>
                 <span>/</span>
                 <span className="text-neutral-800">Catalog</span>
               </nav>
-              <h1 className="text-4xl font-extrabold text-navy-dark tracking-tighter">Research Catalog</h1>
-              <p className="mt-2 text-neutral-500 font-medium text-lg">High-purity reagents and compounds for analytical research use only.</p>
+              <h1 className="text-3xl sm:text-4xl font-extrabold text-navy-dark tracking-tighter">Research Catalog</h1>
+              <p className="mt-2 text-neutral-500 font-medium text-base sm:text-lg">High-purity reagents and compounds for analytical research use only.</p>
             </div>
-            
-            <div className="flex items-center gap-4">
+
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
               <span className="text-xs font-bold uppercase tracking-widest text-neutral-400">Sort by:</span>
               <select
                 value={sortBy}
                 onChange={(event) => setSortBy(event.target.value)}
-                className="bg-white border border-neutral-200 rounded-lg px-4 py-2 text-sm font-bold text-navy-dark outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                className="w-full sm:w-auto bg-white border border-neutral-200 rounded-lg px-4 py-2 text-sm font-bold text-navy-dark outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
               >
                 <option value="newest">Newest Arrivals</option>
                 <option value="price-low">Price: Low to High</option>
@@ -80,10 +80,10 @@ export default function Catalog() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         {searchQuery ? (
-          <div className="mb-8 flex items-center justify-between gap-4 rounded-2xl border border-neutral-200 bg-white px-5 py-4">
-            <p className="text-sm font-bold text-neutral-500">
+          <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-2xl border border-neutral-200 bg-white px-4 sm:px-5 py-4">
+            <p className="text-sm font-bold text-neutral-500 break-words">
               Search results for <span className="text-navy-dark">"{searchParams.get('q')}"</span>
             </p>
             <p className="text-xs font-black uppercase tracking-widest text-neutral-400">
@@ -98,7 +98,7 @@ export default function Catalog() {
             <p className="text-neutral-500 font-medium">Try another search term from the top navigation.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-8">
             {sortedProducts.map((product) => (
               <div key={product.id} className="group bg-white border border-neutral-200 rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300">
                 <div className="bg-white p-4 pb-2">
@@ -109,17 +109,17 @@ export default function Catalog() {
                     imageClassName="transition-transform duration-500 group-hover:scale-[1.1]"
                   />
                 </div>
-                
-                <div className="p-6">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-xl font-extrabold text-navy-dark tracking-tight leading-none uppercase">{product.name}</h3>
-                    <span className="text-xl font-black text-primary">{product.options[0].price}</span>
-                  </div>
-                  <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-6 whitespace-nowrap overflow-hidden text-ellipsis">CAS: {product.cas}</p>
 
-                  <div className="flex items-center justify-between gap-4 mb-4">
+                <div className="p-4 sm:p-6">
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <h3 className="min-w-0 break-words text-lg sm:text-xl font-extrabold text-navy-dark tracking-tight leading-tight uppercase">{product.name}</h3>
+                    <span className="shrink-0 text-lg sm:text-xl font-black text-primary">{product.options[0].price}</span>
+                  </div>
+                  <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-5 sm:mb-6 break-all">CAS: {product.cas}</p>
+
+                  <div className="flex items-center justify-between gap-3 mb-4">
                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Quantity</span>
-                    <div className="inline-flex items-center border border-neutral-200 rounded-lg overflow-hidden">
+                    <div className="inline-flex max-w-full items-center border border-neutral-200 rounded-lg overflow-hidden">
                       <button
                         type="button"
                         onClick={() => setQuantity(product.id, getQuantity(product.id) - 1)}
@@ -145,9 +145,9 @@ export default function Catalog() {
                   </div>
 
                   <div className="flex gap-3">
-                    <Link 
-                      to={`/detail/${product.id}`} 
-                      className="flex-1 text-center py-3 border border-neutral-200 rounded-lg text-sm font-bold text-navy-dark hover:bg-neutral-50 transition-colors uppercase tracking-widest"
+                    <Link
+                      to={`/detail/${product.id}`}
+                      className="flex-1 text-center py-3 border border-neutral-200 rounded-lg text-xs sm:text-sm font-bold text-navy-dark hover:bg-neutral-50 transition-colors uppercase tracking-widest"
                     >
                       View Details
                     </Link>
@@ -165,26 +165,26 @@ export default function Catalog() {
         )}
       </main>
 
-      <footer className="bg-navy-dark text-white py-20 mt-20">
+      <footer className="bg-navy-dark text-white py-14 sm:py-20 mt-16 sm:mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-            <div className="col-span-2">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-10 sm:gap-12">
+            <div className="md:col-span-2">
               <div className="flex items-center gap-2 mb-6">
                 <div className="w-8 h-8 bg-primary rounded flex items-center justify-center">
                   <span className="material-symbols-outlined text-white text-xl">biotech</span>
                 </div>
                 <span className="text-lg font-extrabold tracking-tighter uppercase">Prime Research</span>
               </div>
-              <p className="text-slate-400 max-w-sm mb-8 leading-relaxed">
+              <p className="text-slate-400 max-w-sm mb-6 sm:mb-8 leading-relaxed">
                 Global leader in high-purity research compounds. Our commitment to analytical precision ensures the integrity of your clinical laboratory research.
               </p>
               <div className="flex gap-4">
-                 <span className="material-symbols-outlined text-slate-500 hover:text-white transition-colors cursor-pointer">verified</span>
-                 <span className="material-symbols-outlined text-slate-500 hover:text-white transition-colors cursor-pointer">shield</span>
-                 <span className="material-symbols-outlined text-slate-500 hover:text-white transition-colors cursor-pointer">lock</span>
+                <span className="material-symbols-outlined text-slate-500 hover:text-white transition-colors cursor-pointer">verified</span>
+                <span className="material-symbols-outlined text-slate-500 hover:text-white transition-colors cursor-pointer">shield</span>
+                <span className="material-symbols-outlined text-slate-500 hover:text-white transition-colors cursor-pointer">lock</span>
               </div>
             </div>
-            
+
             <div>
               <h4 className="text-xs font-bold uppercase tracking-widest mb-6 text-white">Quick Links</h4>
               <ul className="space-y-4 text-sm font-bold text-slate-400">
@@ -204,15 +204,15 @@ export default function Catalog() {
               </div>
             </div>
           </div>
-          
-          <div className="mt-20 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
-              © 2024 Prime Research. Lab research use only. Not for human consumption.
+
+          <div className="mt-12 sm:mt-20 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 text-center md:text-left">
+              Copyright 2024 Prime Research. Lab research use only. Not for human consumption.
             </p>
-            <div className="flex gap-4 opacity-30 grayscale invert">
-               <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" className="h-4" alt="Visa" />
-               <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" className="h-4" alt="Mastercard" />
-               <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" className="h-4" alt="PayPal" />
+            <div className="flex flex-wrap justify-center gap-4 opacity-30 grayscale invert">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" className="h-4" alt="Visa" />
+              <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" className="h-4" alt="Mastercard" />
+              <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" className="h-4" alt="PayPal" />
             </div>
           </div>
         </div>
