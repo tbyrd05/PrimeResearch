@@ -347,7 +347,7 @@ export default function Cart() {
                     <p className="text-sm font-medium text-neutral-500">{paymentConfig.bitcoinInstructions}</p>
                     <textarea
                       rows="3"
-                      placeholder="Optional Bitcoin payment notes"
+                      placeholder="Comment section: add your Bitcoin transaction number here"
                       value={paymentDetails.bitcoinNotes}
                       onChange={(event) => setPaymentDetails((current) => ({ ...current, bitcoinNotes: event.target.value }))}
                       className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 outline-none focus:border-primary"

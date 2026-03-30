@@ -1,6 +1,6 @@
 export const paymentConfig = {
   cashAppTag: '$RealPrimeResearch',
-  cashAppQrSrc: '/cashapp-qr.png',
+  cashAppQrSrc: '/cashapp%20tag.jpg',
   bitcoinInstructions:
-    'Bitcoin checkout is available. After your order is placed, payment instructions will be sent to your email for confirmation.',
+    'Bitcoin checkout is available. After sending payment, please put the transaction number in the comment section below so we can confirm it quickly.',
 };
