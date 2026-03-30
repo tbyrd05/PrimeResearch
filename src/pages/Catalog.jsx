@@ -190,8 +190,10 @@ export default function Catalog() {
               <ul className="space-y-4 text-sm font-bold text-slate-400">
                 <li><Link to="/catalog" className="hover:text-primary transition-colors">Catalog</Link></li>
                 <li><Link to="/lab-results" className="hover:text-primary transition-colors">COA Database</Link></li>
-                <li><Link to="/support" className="hover:text-primary transition-colors">Shipping Policy</Link></li>
-                <li><Link to="/support" className="hover:text-primary transition-colors">Terms of Service</Link></li>
+                <li><Link to="/support/shipping-policy" className="hover:text-primary transition-colors">Shipping Policy</Link></li>
+                <li><Link to="/support/terms-and-conditions" className="hover:text-primary transition-colors">Terms and Conditions</Link></li>
+                <li><Link to="/support/privacy-policy" className="hover:text-primary transition-colors">Privacy Policy</Link></li>
+                <li><Link to="/support/refund-and-return" className="hover:text-primary transition-colors">Refund and Return</Link></li>
               </ul>
             </div>
 

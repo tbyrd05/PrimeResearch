@@ -118,6 +118,24 @@ export default function Support() {
                 <li>Use the COAs and Test Results tab when you need supporting lab images.</li>
               </ul>
             </div>
+
+            <div className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-8">
+              <p className="text-xs font-black uppercase tracking-[0.25em] text-neutral-400">Policies</p>
+              <div className="mt-4 grid grid-cols-1 gap-3">
+                <Link to="/support/shipping-policy" className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-4 text-sm font-bold text-navy-dark transition-colors hover:border-primary hover:text-primary">
+                  Shipping Policy
+                </Link>
+                <Link to="/support/terms-and-conditions" className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-4 text-sm font-bold text-navy-dark transition-colors hover:border-primary hover:text-primary">
+                  Terms and Conditions
+                </Link>
+                <Link to="/support/privacy-policy" className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-4 text-sm font-bold text-navy-dark transition-colors hover:border-primary hover:text-primary">
+                  Privacy Policy
+                </Link>
+                <Link to="/support/refund-and-return" className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-4 text-sm font-bold text-navy-dark transition-colors hover:border-primary hover:text-primary">
+                  Refund and Return Policy
+                </Link>
+              </div>
+            </div>
           </aside>
         </div>
       </main>

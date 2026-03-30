@@ -11,6 +11,12 @@ function formatCurrency(value) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value || 0);
 }
 
+function formatDayLabel(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Unknown';
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
 function MetricCard({ label, value, description }) {
   return (
     <article className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6">
@@ -18,6 +24,72 @@ function MetricCard({ label, value, description }) {
       <p className="mt-3 text-3xl font-extrabold tracking-tight text-navy-dark">{value}</p>
       {description ? <p className="mt-2 text-sm font-medium text-neutral-500">{description}</p> : null}
     </article>
+  );
+}
+
+function SalesTrendChart({ orders }) {
+  const points = useMemo(() => {
+    const grouped = orders.reduce((map, order) => {
+      const parsed = new Date(order.placedAt);
+      const key = Number.isNaN(parsed.getTime())
+        ? 'Unknown'
+        : new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate()).toISOString();
+      map.set(key, (map.get(key) || 0) + parseCurrency(order.total));
+      return map;
+    }, new Map());
+
+    return Array.from(grouped.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([date, total]) => ({ date, total }));
+  }, [orders]);
+
+  if (!points.length) {
+    return (
+      <div className="mt-6 rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 p-6 text-center">
+        <p className="text-lg font-extrabold text-navy-dark">No sales data yet.</p>
+        <p className="mt-2 text-sm font-medium text-neutral-500">The chart will update automatically as orders are placed over time.</p>
+      </div>
+    );
+  }
+
+  const max = Math.max(...points.map((point) => point.total), 1);
+  const chartPoints = points
+    .map((point, index) => {
+      const x = points.length === 1 ? 50 : (index / (points.length - 1)) * 100;
+      const y = 100 - (point.total / max) * 100;
+      return `${x},${y}`;
+    })
+    .join(' ');
+
+  return (
+    <div className="mt-6">
+      <div className="h-64 rounded-3xl border border-neutral-200 bg-neutral-50 p-4 sm:p-6">
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-full w-full overflow-visible">
+          <defs>
+            <linearGradient id="sales-fill" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stopColor="#3366FF" stopOpacity="0.28" />
+              <stop offset="100%" stopColor="#3366FF" stopOpacity="0.03" />
+            </linearGradient>
+          </defs>
+          <polyline fill="none" stroke="#3366FF" strokeWidth="2" vectorEffect="non-scaling-stroke" points={chartPoints} />
+          <polyline fill="url(#sales-fill)" stroke="none" points={`0,100 ${chartPoints} 100,100`} />
+          {points.map((point, index) => {
+            const x = points.length === 1 ? 50 : (index / (points.length - 1)) * 100;
+            const y = 100 - (point.total / max) * 100;
+            return <circle key={`${point.date}-${index}`} cx={x} cy={y} r="2.4" fill="#0F2D4E" vectorEffect="non-scaling-stroke" />;
+          })}
+        </svg>
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+        {points.map((point) => (
+          <div key={point.date} className="rounded-2xl border border-neutral-200 bg-white px-4 py-3">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-neutral-400">{formatDayLabel(point.date)}</p>
+            <p className="mt-2 font-extrabold text-navy-dark">{formatCurrency(point.total)}</p>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -118,7 +190,7 @@ export default function OwnerAnalytics() {
                   <div key={order.id} className="flex flex-col gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <p className="font-bold text-navy-dark">{order.customer?.fullName || 'Customer'}</p>
-                      <p className="text-sm text-neutral-500">{order.id} · {order.payment?.label}</p>
+                      <p className="text-sm text-neutral-500">{order.id} | {order.payment?.label}</p>
                     </div>
                     <div className="flex flex-col gap-1 sm:items-end">
                       <span className="font-black text-primary">{order.total}</span>
@@ -133,6 +205,12 @@ export default function OwnerAnalytics() {
               </div>
             )}
           </article>
+        </section>
+
+        <section className="mt-8 rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6">
+          <h2 className="text-xl font-extrabold tracking-tight text-navy-dark">Sales Trend</h2>
+          <p className="mt-1 text-sm font-medium text-neutral-500">Daily gross sales update automatically over time as orders are placed.</p>
+          <SalesTrendChart orders={orders} />
         </section>
       </main>
     </div>

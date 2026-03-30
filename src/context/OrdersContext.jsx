@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from '
 const OrdersContext = createContext(null);
 const ORDERS_KEY = 'prime-research-orders';
 const SENT_CLEANUP_KEY = 'prime-research-sent-cleanup-v1';
+const ORDER_RESET_KEY = 'prime-research-order-reset-v1';
 
 function readOrders() {
   const stored = window.localStorage.getItem(ORDERS_KEY);
@@ -13,6 +14,13 @@ export function OrdersProvider({ children }) {
   const [orders, setOrders] = useState(() => {
     const existingOrders = readOrders();
     const didCleanupSentOrders = window.localStorage.getItem(SENT_CLEANUP_KEY) === 'done';
+    const didResetOrders = window.localStorage.getItem(ORDER_RESET_KEY) === 'done';
+
+    if (!didResetOrders) {
+      window.localStorage.setItem(ORDER_RESET_KEY, 'done');
+      window.localStorage.setItem(ORDERS_KEY, JSON.stringify([]));
+      return [];
+    }
 
     if (didCleanupSentOrders) {
       return existingOrders;
