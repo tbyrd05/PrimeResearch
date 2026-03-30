@@ -4,27 +4,54 @@ import Navbar from '../components/Navbar';
 import ProductArtwork from '../components/ProductArtwork';
 import { useCart } from '../context/CartContext';
 import { useOrders } from '../context/OrdersContext';
+import { useAuth } from '../context/AuthContext';
 import { products } from '../data/products';
+import { paymentConfig } from '../data/paymentConfig';
+
+function PaymentQrCard({ src, tag }) {
+  const [hasError, setHasError] = useState(false);
+
+  return (
+    <div className="rounded-2xl border border-neutral-200 bg-white p-4">
+      <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50 p-3">
+        {!hasError ? (
+          <img
+            src={src}
+            alt="Cash App QR code"
+            className="mx-auto aspect-square w-full max-w-[16rem] object-contain"
+            onError={() => setHasError(true)}
+          />
+        ) : (
+          <div className="mx-auto flex aspect-square w-full max-w-[16rem] items-center justify-center rounded-2xl border border-dashed border-neutral-300 bg-white p-6 text-center text-sm font-medium text-neutral-500">
+            Cash App QR goes here.
+            <br />
+            Add your image at <span className="font-bold">{src}</span>
+          </div>
+        )}
+      </div>
+      <p className="mt-3 text-center text-sm font-medium text-neutral-500">
+        Send payment to <span className="font-black text-navy-dark">{tag}</span>, then press complete checkout.
+      </p>
+    </div>
+  );
+}
 
 export default function Cart() {
+  const { user } = useAuth();
   const { items, itemCount, subtotal, formattedSubtotal, updateQuantity, removeItem, clearCart, formatPrice } = useCart();
   const { placeOrder } = useOrders();
   const [checkout, setCheckout] = useState({
-    fullName: '',
-    email: '',
+    fullName: user?.name || '',
+    email: user?.email || '',
     phone: '',
     address: '',
     city: '',
     state: '',
     zip: '',
   });
-  const [paymentMethod, setPaymentMethod] = useState('card');
+  const [paymentMethod, setPaymentMethod] = useState('cashapp');
   const [paymentDetails, setPaymentDetails] = useState({
-    cardName: '',
-    cardNumber: '',
-    expiry: '',
-    cvv: '',
-    bitcoinWallet: '',
+    bitcoinNotes: '',
   });
   const [checkoutComplete, setCheckoutComplete] = useState(false);
 
@@ -42,19 +69,20 @@ export default function Cart() {
   function handleCheckoutSubmit(event) {
     event.preventDefault();
     const orderId = `PR-${Date.now()}`;
-    const paymentSummary = paymentMethod === 'card'
+    const paymentSummary = paymentMethod === 'cashapp'
       ? {
-          label: 'Credit or Debit Card',
-          detail: paymentDetails.cardNumber ? `Card ending in ${paymentDetails.cardNumber.slice(-4)}` : 'Card details submitted',
+          label: 'Cash App',
+          detail: `Customer instructed to send payment to ${paymentConfig.cashAppTag}`,
         }
       : {
           label: 'Bitcoin',
-          detail: paymentDetails.bitcoinWallet ? `Wallet ending in ${paymentDetails.bitcoinWallet.slice(-6)}` : 'Bitcoin wallet submitted',
+          detail: paymentDetails.bitcoinNotes?.trim() || 'Customer selected Bitcoin checkout and is awaiting payment confirmation.',
         };
 
     placeOrder({
       id: orderId,
       placedAt: new Date().toLocaleString(),
+      accountEmail: user?.email?.toLowerCase() || checkout.email.toLowerCase(),
       customer: {
         fullName: checkout.fullName,
         email: checkout.email,
@@ -65,6 +93,7 @@ export default function Cart() {
         zip: checkout.zip,
       },
       payment: paymentSummary,
+      paymentStatus: 'Awaiting Confirmation',
       items: cartItems,
       subtotal: formattedSubtotal,
       shipping: formatPrice(shipping),
@@ -100,7 +129,7 @@ export default function Cart() {
         {checkoutComplete && (
           <div className="mb-8 rounded-2xl border border-emerald-200 bg-emerald-50 px-6 py-5">
             <p className="text-sm font-black uppercase tracking-widest text-emerald-700 mb-1">Order Completed</p>
-            <p className="text-neutral-700 font-medium">Your shipping number will be emailed once your order has shipped.</p>
+            <p className="text-neutral-700 font-medium">Once payment has been confirmed, your order will be sent alongside an email. If payment has not been received, you will receive an email regarding that.</p>
           </div>
         )}
 
@@ -271,18 +300,18 @@ export default function Cart() {
                 <div className="pt-2">
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400 mb-3">Payment Method</p>
                   <div className="grid grid-cols-1 gap-3">
-                    <label className={`flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-4 transition-colors ${paymentMethod === 'card' ? 'border-primary bg-primary/5' : 'border-neutral-200 bg-neutral-50'}`}>
+                    <label className={`flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-4 transition-colors ${paymentMethod === 'cashapp' ? 'border-primary bg-primary/5' : 'border-neutral-200 bg-neutral-50'}`}>
                       <input
                         type="radio"
                         name="paymentMethod"
-                        value="card"
-                        checked={paymentMethod === 'card'}
+                        value="cashapp"
+                        checked={paymentMethod === 'cashapp'}
                         onChange={(event) => setPaymentMethod(event.target.value)}
                         className="mt-1"
                       />
                       <div>
-                        <p className="text-sm font-black uppercase tracking-widest text-navy-dark">Credit or Debit Card</p>
-                        <p className="mt-1 text-sm text-neutral-500">Enter card details directly during checkout.</p>
+                        <p className="text-sm font-black uppercase tracking-widest text-navy-dark">Cash App</p>
+                        <p className="mt-1 text-sm text-neutral-500">Pay with Cash App using the tag and QR code below, then press complete checkout.</p>
                       </div>
                     </label>
 
@@ -297,64 +326,32 @@ export default function Cart() {
                       />
                       <div>
                         <p className="text-sm font-black uppercase tracking-widest text-navy-dark">Bitcoin</p>
-                        <p className="mt-1 text-sm text-neutral-500">Enter your Bitcoin wallet and finish payment after order submission.</p>
+                        <p className="mt-1 text-sm text-neutral-500">Place the order with Bitcoin selected and payment confirmation will be handled after checkout.</p>
                       </div>
                     </label>
                   </div>
                 </div>
 
-                {paymentMethod === 'card' ? (
-                  <div className="space-y-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
-                    <input
-                      required
-                      type="text"
-                      placeholder="Name on Card"
-                      value={paymentDetails.cardName}
-                      onChange={(event) => setPaymentDetails((current) => ({ ...current, cardName: event.target.value }))}
-                      className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 outline-none focus:border-primary"
-                    />
-                    <input
-                      required
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="Card Number"
-                      value={paymentDetails.cardNumber}
-                      onChange={(event) => setPaymentDetails((current) => ({ ...current, cardNumber: event.target.value }))}
-                      className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 outline-none focus:border-primary"
-                    />
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      <input
-                        required
-                        type="text"
-                        placeholder="MM/YY"
-                        value={paymentDetails.expiry}
-                        onChange={(event) => setPaymentDetails((current) => ({ ...current, expiry: event.target.value }))}
-                        className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 outline-none focus:border-primary"
-                      />
-                      <input
-                        required
-                        type="text"
-                        inputMode="numeric"
-                        placeholder="CVV"
-                        value={paymentDetails.cvv}
-                        onChange={(event) => setPaymentDetails((current) => ({ ...current, cvv: event.target.value }))}
-                        className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 outline-none focus:border-primary"
-                      />
+                {paymentMethod === 'cashapp' ? (
+                  <div className="space-y-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+                      Cash App Tag: <span className="font-black">{paymentConfig.cashAppTag}</span>
                     </div>
+                    <PaymentQrCard src={paymentConfig.cashAppQrSrc} tag={paymentConfig.cashAppTag} />
+                    <p className="text-sm font-medium text-neutral-500">Once you have completed payment, press complete checkout.</p>
                   </div>
                 ) : null}
 
                 {paymentMethod === 'bitcoin' ? (
                   <div className="space-y-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
-                    <input
-                      required
-                      type="text"
-                      placeholder="Bitcoin Wallet Address"
-                      value={paymentDetails.bitcoinWallet}
-                      onChange={(event) => setPaymentDetails((current) => ({ ...current, bitcoinWallet: event.target.value }))}
+                    <p className="text-sm font-medium text-neutral-500">{paymentConfig.bitcoinInstructions}</p>
+                    <textarea
+                      rows="3"
+                      placeholder="Optional Bitcoin payment notes"
+                      value={paymentDetails.bitcoinNotes}
+                      onChange={(event) => setPaymentDetails((current) => ({ ...current, bitcoinNotes: event.target.value }))}
                       className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 outline-none focus:border-primary"
                     />
-                    <p className="text-sm font-medium text-neutral-500">We will use this wallet information to match your Bitcoin payment after checkout is submitted.</p>
                   </div>
                 ) : null}
 

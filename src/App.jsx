@@ -8,6 +8,8 @@ import Cart from './pages/Cart';
 import ProtectedRoute from './components/ProtectedRoute';
 import OwnerRoute from './components/OwnerRoute';
 import Orders from './pages/Orders';
+import Account from './pages/Account';
+import OwnerAnalytics from './pages/OwnerAnalytics';
 
 function App() {
   return (
@@ -17,8 +19,10 @@ function App() {
         <Route path="/catalog" element={<ProtectedRoute><Catalog /></ProtectedRoute>} />
         <Route path="/detail/:id" element={<ProtectedRoute><Detail /></ProtectedRoute>} />
         <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
+        <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
         <Route path="/lab-results" element={<ProtectedRoute><LabResults /></ProtectedRoute>} />
         <Route path="/support" element={<ProtectedRoute><Support /></ProtectedRoute>} />
+        <Route path="/owner/analytics" element={<OwnerRoute><OwnerAnalytics /></OwnerRoute>} />
         <Route path="/owner/orders" element={<OwnerRoute><Orders /></OwnerRoute>} />
       </Routes>
     </Router>

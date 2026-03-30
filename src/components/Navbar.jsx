@@ -46,13 +46,21 @@ export default function Navbar() {
                 <span className="material-symbols-outlined">shopping_cart</span>
                 <span className="absolute -top-2 -right-2 bg-primary text-[10px] font-bold px-1.5 py-0.5 rounded-full">{itemCount}</span>
               </Link>
-              <button
-                type="button"
-                onClick={signOut}
+              <Link
+                to="/account"
                 className="bg-primary hover:bg-primary-hover px-3 sm:px-5 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all active:scale-95"
               >
-                {user ? 'Sign Out' : 'Account'}
-              </button>
+                Account
+              </Link>
+              {user ? (
+                <button
+                  type="button"
+                  onClick={signOut}
+                  className="px-2.5 py-2 text-[11px] font-bold uppercase tracking-widest text-slate-300 transition-colors hover:text-white sm:px-3 sm:text-xs"
+                >
+                  Sign Out
+                </button>
+              ) : null}
             </div>
           </div>
 
@@ -73,14 +81,18 @@ export default function Navbar() {
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 md:hidden">
             <NavLink to="/catalog" className={navLinkClass}>Catalog</NavLink>
             <NavLink to="/lab-results" className={navLinkClass}>COAs and Test Results</NavLink>
+            <NavLink to="/account" className={navLinkClass}>Account</NavLink>
             <NavLink to="/support" className={navLinkClass}>Support</NavLink>
+            {isOwner ? <NavLink to="/owner/analytics" className={navLinkClass}>Sales</NavLink> : null}
             {isOwner ? <NavLink to="/owner/orders" className={navLinkClass}>Orders</NavLink> : null}
           </div>
 
           <div className="hidden md:flex items-center gap-6">
             <NavLink to="/catalog" className={navLinkClass}>Catalog</NavLink>
             <NavLink to="/lab-results" className={navLinkClass}>COAs and Test Results</NavLink>
+            <NavLink to="/account" className={navLinkClass}>Account</NavLink>
             <NavLink to="/support" className={navLinkClass}>Support</NavLink>
+            {isOwner ? <NavLink to="/owner/analytics" className={navLinkClass}>Sales</NavLink> : null}
             {isOwner ? <NavLink to="/owner/orders" className={navLinkClass}>Orders</NavLink> : null}
           </div>
         </div>

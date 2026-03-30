@@ -1,5 +1,5 @@
 export const supportConfig = {
-  contactEmail: 'realprimeresearch@gmail.com',
+  contactEmail: 'support@real-primeresearch.shop',
   telegramUrl: '',
   responseWindow: 'We usually respond within 24 hours on business days.',
 };

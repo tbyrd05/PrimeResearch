@@ -28,6 +28,7 @@ export default function Orders() {
                 <p className="text-xs font-black uppercase tracking-[0.2em] text-neutral-400 mb-2">Payment</p>
                 <p className="text-sm font-bold text-navy-dark">{order.payment.label}</p>
                 <p className="text-sm text-neutral-500">{order.payment.detail}</p>
+                <p className="mt-1 text-xs font-bold uppercase tracking-widest text-neutral-400">{order.paymentStatus || 'Awaiting Confirmation'}</p>
               </div>
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.2em] text-neutral-400 mb-2">Total</p>

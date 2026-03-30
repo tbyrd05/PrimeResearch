@@ -31,7 +31,15 @@ export function OrdersProvider({ children }) {
   const value = useMemo(() => ({
     orders,
     placeOrder(order) {
-      setOrders((current) => [{ ...order, status: order.status || 'Pending' }, ...current]);
+      setOrders((current) => [
+        {
+          ...order,
+          status: order.status || 'Pending',
+          paymentStatus: order.paymentStatus || 'Awaiting Confirmation',
+          accountEmail: order.accountEmail || order.customer?.email?.toLowerCase?.() || '',
+        },
+        ...current,
+      ]);
     },
     updateOrderStatus(orderId, status) {
       setOrders((current) =>
