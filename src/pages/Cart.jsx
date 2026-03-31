@@ -51,6 +51,7 @@ export default function Cart() {
   });
   const [paymentMethod, setPaymentMethod] = useState('cashapp');
   const [paymentDetails, setPaymentDetails] = useState({
+    cashAppNotes: '',
     bitcoinNotes: '',
   });
   const [checkoutComplete, setCheckoutComplete] = useState(false);
@@ -72,7 +73,9 @@ export default function Cart() {
     const paymentSummary = paymentMethod === 'cashapp'
       ? {
           label: 'Cash App',
-          detail: `Customer instructed to send payment to ${paymentConfig.cashAppTag}`,
+          detail: paymentDetails.cashAppNotes?.trim()
+            ? `Cash App tag provided: ${paymentDetails.cashAppNotes.trim()}`
+            : `Customer instructed to send payment to ${paymentConfig.cashAppTag}`,
         }
       : {
           label: 'Bitcoin',
@@ -338,6 +341,18 @@ export default function Cart() {
                       Cash App Tag: <span className="font-black">{paymentConfig.cashAppTag}</span>
                     </div>
                     <PaymentQrCard src={paymentConfig.cashAppQrSrc} tag={paymentConfig.cashAppTag} />
+                    <div>
+                      <p className="mb-2 text-sm font-medium text-neutral-600">
+                        Please write down your Cash App tag below to help our team verify your payment faster.
+                      </p>
+                      <textarea
+                        rows="3"
+                        placeholder="Comment section: add your Cash App tag here"
+                        value={paymentDetails.cashAppNotes}
+                        onChange={(event) => setPaymentDetails((current) => ({ ...current, cashAppNotes: event.target.value }))}
+                        className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 outline-none focus:border-primary"
+                      />
+                    </div>
                     <p className="text-sm font-medium text-neutral-500">Once you have completed payment, press complete checkout.</p>
                   </div>
                 ) : null}
