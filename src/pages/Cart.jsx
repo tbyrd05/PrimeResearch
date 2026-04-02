@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import ProductArtwork from '../components/ProductArtwork';
@@ -7,6 +7,8 @@ import { useOrders } from '../context/OrdersContext';
 import { useAuth } from '../context/AuthContext';
 import { products } from '../data/products';
 import { paymentConfig } from '../data/paymentConfig';
+
+const FINAL_NOWPAYMENTS_STATUSES = new Set(['finished', 'confirmed']);
 
 function PaymentQrCard({ src, tag }) {
   const [hasError, setHasError] = useState(false);
@@ -36,10 +38,105 @@ function PaymentQrCard({ src, tag }) {
   );
 }
 
+function buildBitcoinQrUrl(address, amount) {
+  const uri = amount ? `bitcoin:${address}?amount=${amount}` : `bitcoin:${address}`;
+  return `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(uri)}`;
+}
+
+function formatPaymentStatus(status) {
+  const normalized = String(status || '').toLowerCase();
+
+  switch (normalized) {
+    case 'waiting':
+      return 'Waiting for Payment';
+    case 'confirming':
+      return 'Confirming on Blockchain';
+    case 'confirmed':
+      return 'Confirmed';
+    case 'finished':
+      return 'Finished';
+    case 'failed':
+      return 'Failed';
+    case 'expired':
+      return 'Expired';
+    case 'partially_paid':
+      return 'Partially Paid';
+    case 'sending':
+      return 'Sending';
+    case 'refunded':
+      return 'Refunded';
+    default:
+      return status || 'Awaiting Confirmation';
+  }
+}
+
+function BitcoinPaymentCard({
+  bitcoinPayment,
+  bitcoinStatusLabel,
+  paymentStatusLoading,
+  copyFeedback,
+  onCopy,
+  onRefresh,
+}) {
+  if (!bitcoinPayment) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-4 rounded-2xl border border-amber-200 bg-white p-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-[0.9fr_1.1fr]">
+        <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50 p-3">
+          <img
+            src={buildBitcoinQrUrl(bitcoinPayment.pay_address, bitcoinPayment.pay_amount)}
+            alt="Bitcoin payment QR code"
+            className="mx-auto aspect-square w-full max-w-[15rem] object-contain"
+          />
+        </div>
+        <div className="space-y-3">
+          <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Payment Status</p>
+            <p className="mt-2 text-lg font-extrabold text-navy-dark">{bitcoinStatusLabel}</p>
+          </div>
+          <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Pay Amount</p>
+            <p className="mt-2 break-all text-lg font-extrabold text-navy-dark">
+              {bitcoinPayment.pay_amount} {String(bitcoinPayment.pay_currency || '').toUpperCase()}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Pay Address</p>
+        <p className="mt-2 break-all text-sm font-bold text-navy-dark">{bitcoinPayment.pay_address}</p>
+      </div>
+
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <button
+          type="button"
+          onClick={onCopy}
+          className="flex-1 rounded-xl border border-neutral-200 bg-white px-4 py-3 text-xs font-black uppercase tracking-[0.18em] text-navy-dark transition-colors hover:border-primary hover:text-primary"
+        >
+          {copyFeedback || 'Copy Address'}
+        </button>
+        <button
+          type="button"
+          onClick={onRefresh}
+          disabled={paymentStatusLoading}
+          className="flex-1 rounded-xl border border-neutral-200 bg-white px-4 py-3 text-xs font-black uppercase tracking-[0.18em] text-navy-dark transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {paymentStatusLoading ? 'Checking Status...' : 'Refresh Status'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function Cart() {
+  const formRef = useRef(null);
   const { user } = useAuth();
   const { items, itemCount, subtotal, formattedSubtotal, updateQuantity, removeItem, clearCart, formatPrice } = useCart();
-  const { placeOrder } = useOrders();
+  const { placeOrder, updateOrderPayment } = useOrders();
   const [checkout, setCheckout] = useState({
     fullName: user?.name || '',
     email: user?.email || '',
@@ -55,6 +152,14 @@ export default function Cart() {
     bitcoinNotes: '',
   });
   const [checkoutComplete, setCheckoutComplete] = useState(false);
+  const [checkoutMessage, setCheckoutMessage] = useState('');
+  const [bitcoinOrderId, setBitcoinOrderId] = useState('');
+  const [bitcoinPayment, setBitcoinPayment] = useState(null);
+  const [paymentRequestLoading, setPaymentRequestLoading] = useState(false);
+  const [paymentStatusLoading, setPaymentStatusLoading] = useState(false);
+  const [paymentError, setPaymentError] = useState('');
+  const [copyFeedback, setCopyFeedback] = useState('');
+  const [placedOrderId, setPlacedOrderId] = useState('');
 
   const shipping = itemCount > 0 ? 20 : 0;
   const total = subtotal + shipping;
@@ -67,9 +172,155 @@ export default function Cart() {
     [formatPrice, items]
   );
 
+  useEffect(() => {
+    setCheckout((current) => ({
+      ...current,
+      fullName: current.fullName || user?.name || '',
+      email: current.email || user?.email || '',
+    }));
+  }, [user]);
+
+  useEffect(() => {
+    if (!copyFeedback) return undefined;
+    const timeout = window.setTimeout(() => setCopyFeedback(''), 1800);
+    return () => window.clearTimeout(timeout);
+  }, [copyFeedback]);
+
+  async function copyBitcoinAddress() {
+    if (!bitcoinPayment?.pay_address) return;
+    try {
+      await navigator.clipboard.writeText(bitcoinPayment.pay_address);
+      setCopyFeedback('Address copied');
+    } catch {
+      setCopyFeedback('Unable to copy');
+    }
+  }
+
+  async function refreshBitcoinPaymentStatus() {
+    if (!bitcoinPayment?.payment_id) return;
+
+    setPaymentStatusLoading(true);
+    setPaymentError('');
+
+    try {
+      const response = await fetch(`/api/payment-status/${encodeURIComponent(bitcoinPayment.payment_id)}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || 'Unable to fetch payment status.');
+      }
+
+      setBitcoinPayment((current) => ({ ...current, ...data }));
+
+      if (placedOrderId) {
+        updateOrderPayment(placedOrderId, {
+          paymentStatus: formatPaymentStatus(data.payment_status),
+          payment: {
+            label: 'Bitcoin via NOWPayments',
+            detail: `Payment ${data.payment_id}`,
+          },
+          nowPayments: {
+            paymentId: data.payment_id,
+            payAddress: data.pay_address,
+            payAmount: data.pay_amount,
+            payCurrency: data.pay_currency,
+            paymentStatus: data.payment_status,
+          },
+        });
+      }
+    } catch (error) {
+      setPaymentError(error instanceof Error ? error.message : 'Unable to fetch payment status.');
+    } finally {
+      setPaymentStatusLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!bitcoinPayment?.payment_id) {
+      return undefined;
+    }
+
+    if (FINAL_NOWPAYMENTS_STATUSES.has(String(bitcoinPayment.payment_status || '').toLowerCase())) {
+      return undefined;
+    }
+
+    const interval = window.setInterval(() => {
+      refreshBitcoinPaymentStatus();
+    }, 20000);
+
+    return () => window.clearInterval(interval);
+  }, [bitcoinPayment?.payment_id, bitcoinPayment?.payment_status, placedOrderId]);
+
+  async function handleCreateBitcoinPayment() {
+    if (!formRef.current?.reportValidity()) {
+      return;
+    }
+
+    setPaymentRequestLoading(true);
+    setPaymentError('');
+    setCheckoutComplete(false);
+    setCheckoutMessage('');
+
+    try {
+      const orderId = bitcoinOrderId || `PR-${Date.now()}`;
+      const response = await fetch('/api/create-payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          orderId,
+          priceAmount: Number(total.toFixed(2)),
+          payCurrency: 'btc',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || data?.detail || 'Unable to create Bitcoin payment.');
+      }
+
+      setBitcoinOrderId(orderId);
+      setBitcoinPayment(data);
+    } catch (error) {
+      setPaymentError(error instanceof Error ? error.message : 'Unable to create Bitcoin payment.');
+    } finally {
+      setPaymentRequestLoading(false);
+    }
+  }
+
+  function resetBitcoinState() {
+    setBitcoinOrderId('');
+    setBitcoinPayment(null);
+    setPaymentError('');
+    setCopyFeedback('');
+    setPlacedOrderId('');
+  }
+
+  function handlePaymentMethodChange(nextMethod) {
+    setPaymentMethod(nextMethod);
+    setCheckoutComplete(false);
+    setCheckoutMessage('');
+
+    if (nextMethod !== 'bitcoin') {
+      resetBitcoinState();
+    }
+  }
+
   function handleCheckoutSubmit(event) {
     event.preventDefault();
-    const orderId = `PR-${Date.now()}`;
+    setPaymentError('');
+
+    const orderId = paymentMethod === 'bitcoin'
+      ? bitcoinOrderId || `PR-${Date.now()}`
+      : `PR-${Date.now()}`;
+
+    if (paymentMethod === 'bitcoin' && !bitcoinPayment?.payment_id) {
+      setPaymentError('Create the NOWPayments Bitcoin payment first, then complete checkout.');
+      return;
+    }
+
     const paymentSummary = paymentMethod === 'cashapp'
       ? {
           label: 'Cash App',
@@ -78,9 +329,13 @@ export default function Cart() {
             : `Customer instructed to send payment to ${paymentConfig.cashAppTag}`,
         }
       : {
-          label: 'Bitcoin',
-          detail: paymentDetails.bitcoinNotes?.trim() || 'Customer selected Bitcoin checkout and is awaiting payment confirmation.',
+          label: 'Bitcoin via NOWPayments',
+          detail: `Payment ${bitcoinPayment.payment_id}`,
         };
+
+    const paymentStatus = paymentMethod === 'bitcoin'
+      ? formatPaymentStatus(bitcoinPayment.payment_status)
+      : 'Awaiting Confirmation';
 
     placeOrder({
       id: orderId,
@@ -96,15 +351,33 @@ export default function Cart() {
         zip: checkout.zip,
       },
       payment: paymentSummary,
-      paymentStatus: 'Awaiting Confirmation',
+      paymentStatus,
+      nowPayments: paymentMethod === 'bitcoin'
+        ? {
+            paymentId: bitcoinPayment.payment_id,
+            payAddress: bitcoinPayment.pay_address,
+            payAmount: bitcoinPayment.pay_amount,
+            payCurrency: bitcoinPayment.pay_currency,
+            paymentStatus: bitcoinPayment.payment_status,
+          }
+        : null,
       items: cartItems,
       subtotal: formattedSubtotal,
       shipping: formatPrice(shipping),
       total: formatPrice(total),
     });
+
+    setPlacedOrderId(orderId);
     setCheckoutComplete(true);
+    setCheckoutMessage(
+      paymentMethod === 'bitcoin'
+        ? `Bitcoin payment created. Current status: ${formatPaymentStatus(bitcoinPayment.payment_status)}. We will continue checking for updates while you stay on this page.`
+        : 'Once payment has been confirmed, your order will be sent alongside an email. If payment has not been received, you will receive an email regarding that.'
+    );
     clearCart();
   }
+
+  const bitcoinStatusLabel = bitcoinPayment ? formatPaymentStatus(bitcoinPayment.payment_status) : '';
 
   return (
     <div className="min-h-screen bg-neutral-50 font-sans">
@@ -129,18 +402,38 @@ export default function Cart() {
           </Link>
         </div>
 
-        {checkoutComplete && (
+        {checkoutComplete ? (
           <div className="mb-8 rounded-2xl border border-emerald-200 bg-emerald-50 px-6 py-5">
-            <p className="text-sm font-black uppercase tracking-widest text-emerald-700 mb-1">Order Completed</p>
-            <p className="text-neutral-700 font-medium">Once payment has been confirmed, your order will be sent alongside an email. If payment has not been received, you will receive an email regarding that.</p>
+            <p className="mb-1 text-sm font-black uppercase tracking-widest text-emerald-700">Order Completed</p>
+            <p className="font-medium text-neutral-700">{checkoutMessage}</p>
           </div>
-        )}
+        ) : null}
+
+        {checkoutComplete && paymentMethod === 'bitcoin' && bitcoinPayment ? (
+          <div className="mb-8 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6">
+            <h2 className="mb-4 text-xl font-extrabold tracking-tight text-navy-dark">Bitcoin Payment Details</h2>
+            <BitcoinPaymentCard
+              bitcoinPayment={bitcoinPayment}
+              bitcoinStatusLabel={bitcoinStatusLabel}
+              paymentStatusLoading={paymentStatusLoading}
+              copyFeedback={copyFeedback}
+              onCopy={copyBitcoinAddress}
+              onRefresh={refreshBitcoinPaymentStatus}
+            />
+          </div>
+        ) : null}
+
+        {paymentError ? (
+          <div className="mb-8 rounded-2xl border border-red-200 bg-red-50 px-6 py-5">
+            <p className="text-sm font-bold text-red-700">{paymentError}</p>
+          </div>
+        ) : null}
 
         {cartItems.length === 0 ? (
-          <div className="bg-white border border-neutral-200 rounded-2xl p-10 text-center shadow-sm">
-            <p className="text-xl font-extrabold text-navy-dark mb-3">Your cart is empty.</p>
-            <p className="text-neutral-500 font-medium mb-6">Add products from the catalog to begin checkout.</p>
-            <Link to="/catalog" className="inline-flex items-center justify-center bg-navy-dark text-white px-6 py-3 rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-primary transition-colors">
+          <div className="rounded-2xl border border-neutral-200 bg-white p-10 text-center shadow-sm">
+            <p className="mb-3 text-xl font-extrabold text-navy-dark">Your cart is empty.</p>
+            <p className="mb-6 font-medium text-neutral-500">Add products from the catalog to begin checkout.</p>
+            <Link to="/catalog" className="inline-flex items-center justify-center rounded-xl bg-navy-dark px-6 py-3 text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-primary">
               Browse Catalog
             </Link>
           </div>
@@ -164,12 +457,12 @@ export default function Cart() {
                       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                         <div>
                           <h2 className="break-words text-xl font-extrabold uppercase tracking-tight text-navy-dark sm:text-2xl">{item.name}</h2>
-                          <p className="text-xs font-bold uppercase tracking-widest text-neutral-400 mt-2">Size: {item.size}</p>
-                          <p className="text-sm font-bold text-neutral-500 mt-3">Unit Price: {item.price}</p>
+                          <p className="mt-2 text-xs font-bold uppercase tracking-widest text-neutral-400">Size: {item.size}</p>
+                          <p className="mt-3 text-sm font-bold text-neutral-500">Unit Price: {item.price}</p>
                         </div>
                         <div className="text-left md:text-right">
                           <p className="text-xs font-bold uppercase tracking-widest text-neutral-400">Line Total</p>
-                          <p className="text-2xl font-black text-primary mt-1">{item.lineTotal}</p>
+                          <p className="mt-1 text-2xl font-black text-primary">{item.lineTotal}</p>
                         </div>
                       </div>
 
@@ -178,7 +471,7 @@ export default function Cart() {
                           <button
                             type="button"
                             onClick={() => updateQuantity(item.productId, item.size, item.quantity - 1)}
-                            className="px-4 py-3 text-navy-dark hover:bg-neutral-100 transition-colors"
+                            className="px-4 py-3 text-navy-dark transition-colors hover:bg-neutral-100"
                           >
                             <span className="material-symbols-outlined text-lg">remove</span>
                           </button>
@@ -192,7 +485,7 @@ export default function Cart() {
                           <button
                             type="button"
                             onClick={() => updateQuantity(item.productId, item.size, item.quantity + 1)}
-                            className="px-4 py-3 text-navy-dark hover:bg-neutral-100 transition-colors"
+                            className="px-4 py-3 text-navy-dark transition-colors hover:bg-neutral-100"
                           >
                             <span className="material-symbols-outlined text-lg">add</span>
                           </button>
@@ -201,7 +494,7 @@ export default function Cart() {
                         <button
                           type="button"
                           onClick={() => removeItem(item.productId, item.size)}
-                          className="text-sm font-bold uppercase tracking-widest text-neutral-400 hover:text-red-500 transition-colors"
+                          className="text-sm font-bold uppercase tracking-widest text-neutral-400 transition-colors hover:text-red-500"
                         >
                           Remove
                         </button>
@@ -214,7 +507,7 @@ export default function Cart() {
 
             <aside className="space-y-6">
               <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6">
-                <h2 className="text-xl font-extrabold tracking-tight text-navy-dark mb-6">Order Summary</h2>
+                <h2 className="mb-6 text-xl font-extrabold tracking-tight text-navy-dark">Order Summary</h2>
                 <div className="space-y-4 text-sm font-bold">
                   <div className="flex items-center justify-between text-neutral-500">
                     <span>Items</span>
@@ -228,16 +521,16 @@ export default function Cart() {
                     <span>Shipping</span>
                     <span>{formatPrice(shipping)}</span>
                   </div>
-                  <div className="pt-4 border-t border-neutral-200 flex items-center justify-between text-navy-dark">
-                    <span className="uppercase tracking-widest text-xs">Total</span>
+                  <div className="flex items-center justify-between border-t border-neutral-200 pt-4 text-navy-dark">
+                    <span className="text-xs uppercase tracking-widest">Total</span>
                     <span className="text-2xl font-black text-primary">{formatPrice(total)}</span>
                   </div>
                 </div>
               </div>
 
-              <form onSubmit={handleCheckoutSubmit} className="space-y-4 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6">
+              <form ref={formRef} onSubmit={handleCheckoutSubmit} className="space-y-4 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400 mb-2">Checkout</p>
+                  <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Checkout</p>
                   <h2 className="text-xl font-extrabold tracking-tight text-navy-dark">Research Checkout</h2>
                 </div>
 
@@ -301,7 +594,7 @@ export default function Cart() {
                 </div>
 
                 <div className="pt-2">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400 mb-3">Payment Method</p>
+                  <p className="mb-3 text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Payment Method</p>
                   <div className="grid grid-cols-1 gap-3">
                     <label className={`flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-4 transition-colors ${paymentMethod === 'cashapp' ? 'border-primary bg-primary/5' : 'border-neutral-200 bg-neutral-50'}`}>
                       <input
@@ -309,12 +602,12 @@ export default function Cart() {
                         name="paymentMethod"
                         value="cashapp"
                         checked={paymentMethod === 'cashapp'}
-                        onChange={(event) => setPaymentMethod(event.target.value)}
+                        onChange={(event) => handlePaymentMethodChange(event.target.value)}
                         className="mt-1"
                       />
                       <div>
                         <p className="text-sm font-black uppercase tracking-widest text-navy-dark">Cash App</p>
-                        <p className="mt-1 text-sm text-neutral-500">Pay with Cash App using the tag and QR code below, then press complete checkout.</p>
+                        <p className="mt-1 text-sm text-neutral-500">Use the Cash App tag and QR code below, then complete checkout.</p>
                       </div>
                     </label>
 
@@ -324,12 +617,12 @@ export default function Cart() {
                         name="paymentMethod"
                         value="bitcoin"
                         checked={paymentMethod === 'bitcoin'}
-                        onChange={(event) => setPaymentMethod(event.target.value)}
+                        onChange={(event) => handlePaymentMethodChange(event.target.value)}
                         className="mt-1"
                       />
                       <div>
                         <p className="text-sm font-black uppercase tracking-widest text-navy-dark">Bitcoin</p>
-                        <p className="mt-1 text-sm text-neutral-500">Place the order with Bitcoin selected and payment confirmation will be handled after checkout.</p>
+                        <p className="mt-1 text-sm text-neutral-500">Create a NOWPayments Bitcoin checkout, then send the exact amount shown.</p>
                       </div>
                     </label>
                   </div>
@@ -358,8 +651,9 @@ export default function Cart() {
                 ) : null}
 
                 {paymentMethod === 'bitcoin' ? (
-                  <div className="space-y-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
-                    <p className="text-sm font-medium text-neutral-500">{paymentConfig.bitcoinInstructions}</p>
+                  <div className="space-y-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+                    <p className="text-sm font-medium text-neutral-600">{paymentConfig.bitcoinInstructions}</p>
+
                     <textarea
                       rows="3"
                       placeholder="Comment section: add your Bitcoin transaction number here"
@@ -367,12 +661,30 @@ export default function Cart() {
                       onChange={(event) => setPaymentDetails((current) => ({ ...current, bitcoinNotes: event.target.value }))}
                       className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 outline-none focus:border-primary"
                     />
+
+                    <button
+                      type="button"
+                      onClick={handleCreateBitcoinPayment}
+                      disabled={paymentRequestLoading}
+                      className="w-full rounded-xl bg-[#f7931a] px-6 py-4 text-xs font-black uppercase tracking-[0.18em] text-white transition-colors hover:bg-[#e78617] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {paymentRequestLoading ? 'Creating Payment...' : 'Pay with Bitcoin'}
+                    </button>
+
+                    <BitcoinPaymentCard
+                      bitcoinPayment={bitcoinPayment}
+                      bitcoinStatusLabel={bitcoinStatusLabel}
+                      paymentStatusLoading={paymentStatusLoading}
+                      copyFeedback={copyFeedback}
+                      onCopy={copyBitcoinAddress}
+                      onRefresh={refreshBitcoinPaymentStatus}
+                    />
                   </div>
                 ) : null}
 
                 <button
                   type="submit"
-                  className="w-full bg-navy-dark text-white py-4 px-6 rounded-xl font-black uppercase tracking-[0.18em] text-xs hover:bg-primary transition-colors"
+                  className="w-full rounded-xl bg-navy-dark px-6 py-4 text-xs font-black uppercase tracking-[0.18em] text-white transition-colors hover:bg-primary"
                 >
                   Complete Checkout
                 </button>

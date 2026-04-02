@@ -49,6 +49,11 @@ export function OrdersProvider({ children }) {
         ...current,
       ]);
     },
+    updateOrderPayment(orderId, updates) {
+      setOrders((current) =>
+        current.map((order) => (order.id === orderId ? { ...order, ...updates } : order))
+      );
+    },
     updateOrderStatus(orderId, status) {
       setOrders((current) =>
         current.map((order) => (order.id === orderId ? { ...order, status } : order))
