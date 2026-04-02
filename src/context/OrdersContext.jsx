@@ -10,6 +10,33 @@ function readOrders() {
   return stored ? JSON.parse(stored) : [];
 }
 
+function mergeOrder(currentOrders, incomingOrder) {
+  const existingIndex = currentOrders.findIndex((order) => order.id === incomingOrder.id);
+  const normalizedOrder = {
+    ...incomingOrder,
+    status: incomingOrder.status || 'Pending',
+    paymentStatus: incomingOrder.paymentStatus || 'Awaiting Confirmation',
+    accountEmail: incomingOrder.accountEmail || incomingOrder.customer?.email?.toLowerCase?.() || '',
+  };
+
+  if (existingIndex === -1) {
+    return [normalizedOrder, ...currentOrders];
+  }
+
+  return currentOrders.map((order, index) => (
+    index === existingIndex
+      ? {
+          ...order,
+          ...normalizedOrder,
+          customer: normalizedOrder.customer || order.customer,
+          items: normalizedOrder.items || order.items,
+          nowPayments: normalizedOrder.nowPayments || order.nowPayments,
+          payment: normalizedOrder.payment || order.payment,
+        }
+      : order
+  ));
+}
+
 export function OrdersProvider({ children }) {
   const [orders, setOrders] = useState(() => {
     const existingOrders = readOrders();
@@ -39,15 +66,10 @@ export function OrdersProvider({ children }) {
   const value = useMemo(() => ({
     orders,
     placeOrder(order) {
-      setOrders((current) => [
-        {
-          ...order,
-          status: order.status || 'Pending',
-          paymentStatus: order.paymentStatus || 'Awaiting Confirmation',
-          accountEmail: order.accountEmail || order.customer?.email?.toLowerCase?.() || '',
-        },
-        ...current,
-      ]);
+      setOrders((current) => mergeOrder(current, order));
+    },
+    upsertOrder(order) {
+      setOrders((current) => mergeOrder(current, order));
     },
     updateOrderPayment(orderId, updates) {
       setOrders((current) =>

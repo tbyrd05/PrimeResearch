@@ -7,12 +7,14 @@ export default async function handler(req, res) {
 
   try {
     const paymentId = String(req.query?.paymentId || '').trim();
+    console.log('[API payment-status] requested paymentId', paymentId);
 
     if (!paymentId) {
       return sendJson(res, 400, { error: 'paymentId is required' });
     }
 
     const payment = await nowPaymentsRequest(`/payment/${paymentId}`);
+    console.log('[API payment-status] NOWPayments response', payment);
 
     return sendJson(res, 200, {
       payment_id: payment.payment_id,
@@ -28,10 +30,11 @@ export default async function handler(req, res) {
       outcome_currency: payment.outcome_currency,
     });
   } catch (error) {
+    console.error('[API payment-status] failed', error);
+
     return sendJson(res, 500, {
       error: 'Failed to fetch NOWPayments payment status',
       detail: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 }
-
