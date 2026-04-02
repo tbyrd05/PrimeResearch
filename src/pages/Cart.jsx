@@ -8,8 +8,6 @@ import { useAuth } from '../context/AuthContext';
 import { products } from '../data/products';
 import { paymentConfig } from '../data/paymentConfig';
 
-const FINAL_NOWPAYMENTS_STATUSES = new Set(['finished', 'confirmed']);
-
 function PaymentQrCard({ src, tag }) {
   const [hasError, setHasError] = useState(false);
 
@@ -38,9 +36,17 @@ function PaymentQrCard({ src, tag }) {
   );
 }
 
-function buildBitcoinQrUrl(address, amount) {
-  const uri = amount ? `bitcoin:${address}?amount=${amount}` : `bitcoin:${address}`;
-  return `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(uri)}`;
+function buildInvoiceQrUrl(bitcoinPayment) {
+  const target = bitcoinPayment?.invoice_url
+    || (bitcoinPayment?.pay_address
+      ? (bitcoinPayment?.pay_amount
+        ? `bitcoin:${bitcoinPayment.pay_address}?amount=${bitcoinPayment.pay_amount}`
+        : `bitcoin:${bitcoinPayment.pay_address}`)
+      : '');
+
+  return target
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(target)}`
+    : '';
 }
 
 function formatPaymentStatus(status) {
@@ -66,50 +72,63 @@ function formatPaymentStatus(status) {
     case 'refunded':
       return 'Refunded';
     default:
-      return status || 'Awaiting Confirmation';
+      return status || 'Invoice Created';
   }
 }
 
-function BitcoinPaymentCard({
-  bitcoinPayment,
-  bitcoinStatusLabel,
-  paymentStatusLoading,
-  copyFeedback,
-  onCopy,
-  onRefresh,
-}) {
+function BitcoinInvoiceCard({ bitcoinPayment, copyFeedback, onCopy }) {
   if (!bitcoinPayment) {
     return null;
   }
 
+  const qrUrl = buildInvoiceQrUrl(bitcoinPayment);
+  const copyLabel = bitcoinPayment.pay_address ? 'Copy Address' : 'Copy Invoice Link';
+
   return (
     <div className="space-y-4 rounded-2xl border border-amber-200 bg-white p-4">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-[0.9fr_1.1fr]">
+      {qrUrl ? (
         <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50 p-3">
           <img
-            src={buildBitcoinQrUrl(bitcoinPayment.pay_address, bitcoinPayment.pay_amount)}
-            alt="Bitcoin payment QR code"
+            src={qrUrl}
+            alt="NOWPayments Bitcoin QR code"
             className="mx-auto aspect-square w-full max-w-[15rem] object-contain"
           />
         </div>
-        <div className="space-y-3">
-          <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Payment Status</p>
-            <p className="mt-2 text-lg font-extrabold text-navy-dark">{bitcoinStatusLabel}</p>
-          </div>
-          <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Pay Amount</p>
-            <p className="mt-2 break-all text-lg font-extrabold text-navy-dark">
-              {bitcoinPayment.pay_amount} {String(bitcoinPayment.pay_currency || '').toUpperCase()}
-            </p>
-          </div>
+      ) : null}
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Payment Status</p>
+          <p className="mt-2 text-lg font-extrabold text-navy-dark">{formatPaymentStatus(bitcoinPayment.payment_status)}</p>
+        </div>
+        <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Amount</p>
+          <p className="mt-2 break-all text-lg font-extrabold text-navy-dark">
+            {bitcoinPayment.pay_amount || bitcoinPayment.price_amount || 'N/A'} {String(bitcoinPayment.pay_currency || 'btc').toUpperCase()}
+          </p>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3">
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Pay Address</p>
-        <p className="mt-2 break-all text-sm font-bold text-navy-dark">{bitcoinPayment.pay_address}</p>
-      </div>
+      {bitcoinPayment.pay_address ? (
+        <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Payment Address</p>
+          <p className="mt-2 break-all text-sm font-bold text-navy-dark">{bitcoinPayment.pay_address}</p>
+        </div>
+      ) : null}
+
+      {bitcoinPayment.invoice_url ? (
+        <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Invoice Link</p>
+          <a
+            href={bitcoinPayment.invoice_url}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-2 block break-all text-sm font-bold text-primary transition-colors hover:text-primary-hover"
+          >
+            {bitcoinPayment.invoice_url}
+          </a>
+        </div>
+      ) : null}
 
       <div className="flex flex-col gap-3 sm:flex-row">
         <button
@@ -117,16 +136,18 @@ function BitcoinPaymentCard({
           onClick={onCopy}
           className="flex-1 rounded-xl border border-neutral-200 bg-white px-4 py-3 text-xs font-black uppercase tracking-[0.18em] text-navy-dark transition-colors hover:border-primary hover:text-primary"
         >
-          {copyFeedback || 'Copy Address'}
+          {copyFeedback || copyLabel}
         </button>
-        <button
-          type="button"
-          onClick={onRefresh}
-          disabled={paymentStatusLoading}
-          className="flex-1 rounded-xl border border-neutral-200 bg-white px-4 py-3 text-xs font-black uppercase tracking-[0.18em] text-navy-dark transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {paymentStatusLoading ? 'Checking Status...' : 'Refresh Status'}
-        </button>
+        {bitcoinPayment.invoice_url ? (
+          <a
+            href={bitcoinPayment.invoice_url}
+            target="_blank"
+            rel="noreferrer"
+            className="flex-1 rounded-xl border border-neutral-200 bg-white px-4 py-3 text-center text-xs font-black uppercase tracking-[0.18em] text-navy-dark transition-colors hover:border-primary hover:text-primary"
+          >
+            Open Invoice
+          </a>
+        ) : null}
       </div>
     </div>
   );
@@ -136,7 +157,7 @@ export default function Cart() {
   const formRef = useRef(null);
   const { user } = useAuth();
   const { items, itemCount, subtotal, formattedSubtotal, updateQuantity, removeItem, clearCart, formatPrice } = useCart();
-  const { placeOrder, updateOrderPayment } = useOrders();
+  const { placeOrder } = useOrders();
   const [checkout, setCheckout] = useState({
     fullName: user?.name || '',
     email: user?.email || '',
@@ -156,10 +177,8 @@ export default function Cart() {
   const [bitcoinOrderId, setBitcoinOrderId] = useState('');
   const [bitcoinPayment, setBitcoinPayment] = useState(null);
   const [paymentRequestLoading, setPaymentRequestLoading] = useState(false);
-  const [paymentStatusLoading, setPaymentStatusLoading] = useState(false);
   const [paymentError, setPaymentError] = useState('');
   const [copyFeedback, setCopyFeedback] = useState('');
-  const [placedOrderId, setPlacedOrderId] = useState('');
 
   const shipping = itemCount > 0 ? 20 : 0;
   const total = subtotal + shipping;
@@ -186,70 +205,17 @@ export default function Cart() {
     return () => window.clearTimeout(timeout);
   }, [copyFeedback]);
 
-  async function copyBitcoinAddress() {
-    if (!bitcoinPayment?.pay_address) return;
+  async function copyBitcoinValue() {
+    const valueToCopy = bitcoinPayment?.pay_address || bitcoinPayment?.invoice_url;
+    if (!valueToCopy) return;
+
     try {
-      await navigator.clipboard.writeText(bitcoinPayment.pay_address);
-      setCopyFeedback('Address copied');
+      await navigator.clipboard.writeText(valueToCopy);
+      setCopyFeedback(bitcoinPayment?.pay_address ? 'Address copied' : 'Invoice link copied');
     } catch {
       setCopyFeedback('Unable to copy');
     }
   }
-
-  async function refreshBitcoinPaymentStatus() {
-    if (!bitcoinPayment?.payment_id) return;
-
-    setPaymentStatusLoading(true);
-    setPaymentError('');
-
-    try {
-      const response = await fetch(`/api/payment-status/${encodeURIComponent(bitcoinPayment.payment_id)}`);
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data?.error || 'Unable to fetch payment status.');
-      }
-
-      setBitcoinPayment((current) => ({ ...current, ...data }));
-
-      if (placedOrderId) {
-        updateOrderPayment(placedOrderId, {
-          paymentStatus: formatPaymentStatus(data.payment_status),
-          payment: {
-            label: 'Bitcoin via NOWPayments',
-            detail: `Payment ${data.payment_id}`,
-          },
-          nowPayments: {
-            paymentId: data.payment_id,
-            payAddress: data.pay_address,
-            payAmount: data.pay_amount,
-            payCurrency: data.pay_currency,
-            paymentStatus: data.payment_status,
-          },
-        });
-      }
-    } catch (error) {
-      setPaymentError(error instanceof Error ? error.message : 'Unable to fetch payment status.');
-    } finally {
-      setPaymentStatusLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    if (!bitcoinPayment?.payment_id) {
-      return undefined;
-    }
-
-    if (FINAL_NOWPAYMENTS_STATUSES.has(String(bitcoinPayment.payment_status || '').toLowerCase())) {
-      return undefined;
-    }
-
-    const interval = window.setInterval(() => {
-      refreshBitcoinPaymentStatus();
-    }, 20000);
-
-    return () => window.clearInterval(interval);
-  }, [bitcoinPayment?.payment_id, bitcoinPayment?.payment_status, placedOrderId]);
 
   async function handleCreateBitcoinPayment() {
     if (!formRef.current?.reportValidity()) {
@@ -262,7 +228,7 @@ export default function Cart() {
     setCheckoutMessage('');
 
     try {
-      const orderId = bitcoinOrderId || `PR-${Date.now()}`;
+      const orderId = bitcoinOrderId || `order_${Date.now()}`;
       const response = await fetch('/api/create-payment', {
         method: 'POST',
         headers: {
@@ -278,13 +244,13 @@ export default function Cart() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data?.error || data?.detail || 'Unable to create Bitcoin payment.');
+        throw new Error(data?.error || data?.detail || 'Unable to create Bitcoin invoice.');
       }
 
       setBitcoinOrderId(orderId);
       setBitcoinPayment(data);
     } catch (error) {
-      setPaymentError(error instanceof Error ? error.message : 'Unable to create Bitcoin payment.');
+      setPaymentError(error instanceof Error ? error.message : 'Unable to create Bitcoin invoice.');
     } finally {
       setPaymentRequestLoading(false);
     }
@@ -295,7 +261,6 @@ export default function Cart() {
     setBitcoinPayment(null);
     setPaymentError('');
     setCopyFeedback('');
-    setPlacedOrderId('');
   }
 
   function handlePaymentMethodChange(nextMethod) {
@@ -313,11 +278,11 @@ export default function Cart() {
     setPaymentError('');
 
     const orderId = paymentMethod === 'bitcoin'
-      ? bitcoinOrderId || `PR-${Date.now()}`
+      ? bitcoinOrderId || `order_${Date.now()}`
       : `PR-${Date.now()}`;
 
-    if (paymentMethod === 'bitcoin' && !bitcoinPayment?.payment_id) {
-      setPaymentError('Create the NOWPayments Bitcoin payment first, then complete checkout.');
+    if (paymentMethod === 'bitcoin' && !bitcoinPayment) {
+      setPaymentError('Click Pay with Bitcoin first to create the NOWPayments invoice.');
       return;
     }
 
@@ -330,11 +295,11 @@ export default function Cart() {
         }
       : {
           label: 'Bitcoin via NOWPayments',
-          detail: `Payment ${bitcoinPayment.payment_id}`,
+          detail: bitcoinPayment?.invoice_url || `Invoice ${bitcoinPayment?.payment_id || bitcoinOrderId}`,
         };
 
     const paymentStatus = paymentMethod === 'bitcoin'
-      ? formatPaymentStatus(bitcoinPayment.payment_status)
+      ? formatPaymentStatus(bitcoinPayment?.payment_status)
       : 'Awaiting Confirmation';
 
     placeOrder({
@@ -354,11 +319,12 @@ export default function Cart() {
       paymentStatus,
       nowPayments: paymentMethod === 'bitcoin'
         ? {
-            paymentId: bitcoinPayment.payment_id,
-            payAddress: bitcoinPayment.pay_address,
-            payAmount: bitcoinPayment.pay_amount,
-            payCurrency: bitcoinPayment.pay_currency,
-            paymentStatus: bitcoinPayment.payment_status,
+            paymentId: bitcoinPayment?.payment_id || null,
+            invoiceUrl: bitcoinPayment?.invoice_url || null,
+            payAddress: bitcoinPayment?.pay_address || null,
+            payAmount: bitcoinPayment?.pay_amount || bitcoinPayment?.price_amount || null,
+            payCurrency: bitcoinPayment?.pay_currency || 'btc',
+            paymentStatus: bitcoinPayment?.payment_status || 'waiting',
           }
         : null,
       items: cartItems,
@@ -367,17 +333,14 @@ export default function Cart() {
       total: formatPrice(total),
     });
 
-    setPlacedOrderId(orderId);
     setCheckoutComplete(true);
     setCheckoutMessage(
       paymentMethod === 'bitcoin'
-        ? `Bitcoin payment created. Current status: ${formatPaymentStatus(bitcoinPayment.payment_status)}. We will continue checking for updates while you stay on this page.`
+        ? 'Your NOWPayments Bitcoin invoice has been created. Send the amount shown using the address or invoice link below, then keep your order details for reference.'
         : 'Once payment has been confirmed, your order will be sent alongside an email. If payment has not been received, you will receive an email regarding that.'
     );
     clearCart();
   }
-
-  const bitcoinStatusLabel = bitcoinPayment ? formatPaymentStatus(bitcoinPayment.payment_status) : '';
 
   return (
     <div className="min-h-screen bg-neutral-50 font-sans">
@@ -412,14 +375,7 @@ export default function Cart() {
         {checkoutComplete && paymentMethod === 'bitcoin' && bitcoinPayment ? (
           <div className="mb-8 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6">
             <h2 className="mb-4 text-xl font-extrabold tracking-tight text-navy-dark">Bitcoin Payment Details</h2>
-            <BitcoinPaymentCard
-              bitcoinPayment={bitcoinPayment}
-              bitcoinStatusLabel={bitcoinStatusLabel}
-              paymentStatusLoading={paymentStatusLoading}
-              copyFeedback={copyFeedback}
-              onCopy={copyBitcoinAddress}
-              onRefresh={refreshBitcoinPaymentStatus}
-            />
+            <BitcoinInvoiceCard bitcoinPayment={bitcoinPayment} copyFeedback={copyFeedback} onCopy={copyBitcoinValue} />
           </div>
         ) : null}
 
@@ -622,7 +578,7 @@ export default function Cart() {
                       />
                       <div>
                         <p className="text-sm font-black uppercase tracking-widest text-navy-dark">Bitcoin</p>
-                        <p className="mt-1 text-sm text-neutral-500">Create a NOWPayments Bitcoin checkout, then send the exact amount shown.</p>
+                        <p className="mt-1 text-sm text-neutral-500">Create a NOWPayments Bitcoin invoice, then use the invoice or payment details to send funds.</p>
                       </div>
                     </label>
                   </div>
@@ -668,17 +624,10 @@ export default function Cart() {
                       disabled={paymentRequestLoading}
                       className="w-full rounded-xl bg-[#f7931a] px-6 py-4 text-xs font-black uppercase tracking-[0.18em] text-white transition-colors hover:bg-[#e78617] disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {paymentRequestLoading ? 'Creating Payment...' : 'Pay with Bitcoin'}
+                      {paymentRequestLoading ? 'Creating Invoice...' : 'Pay with Bitcoin'}
                     </button>
 
-                    <BitcoinPaymentCard
-                      bitcoinPayment={bitcoinPayment}
-                      bitcoinStatusLabel={bitcoinStatusLabel}
-                      paymentStatusLoading={paymentStatusLoading}
-                      copyFeedback={copyFeedback}
-                      onCopy={copyBitcoinAddress}
-                      onRefresh={refreshBitcoinPaymentStatus}
-                    />
+                    <BitcoinInvoiceCard bitcoinPayment={bitcoinPayment} copyFeedback={copyFeedback} onCopy={copyBitcoinValue} />
                   </div>
                 ) : null}
 

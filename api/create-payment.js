@@ -1,9 +1,4 @@
-import {
-  getNowPaymentsIpnUrl,
-  nowPaymentsRequest,
-  readJsonBody,
-  sendJson,
-} from './_lib/nowpayments.js';
+import { nowPaymentsRequest, readJsonBody, sendJson } from './_lib/nowpayments.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -12,8 +7,8 @@ export default async function handler(req, res) {
 
   try {
     const body = await readJsonBody(req);
-    const orderId = String(body?.orderId || '').trim();
-    const priceAmount = Number(body?.priceAmount);
+    const orderId = String(body?.orderId || `order_${Date.now()}`).trim();
+    const priceAmount = Number(body?.priceAmount ?? 50);
     const payCurrency = String(body?.payCurrency || 'btc').toLowerCase();
 
     if (!orderId) {
@@ -24,31 +19,31 @@ export default async function handler(req, res) {
       return sendJson(res, 400, { error: 'priceAmount must be a positive number' });
     }
 
-    const payment = await nowPaymentsRequest('/payment', {
+    const payment = await nowPaymentsRequest('/invoice', {
       method: 'POST',
       body: {
         price_amount: priceAmount,
         price_currency: 'usd',
         pay_currency: payCurrency,
         order_id: orderId,
-        order_description: `Order ${orderId}`,
-        ipn_callback_url: getNowPaymentsIpnUrl(),
+        order_description: 'Prime Research Order',
       },
     });
 
     return sendJson(res, 200, {
-      payment_id: payment.payment_id,
-      pay_address: payment.pay_address,
-      pay_amount: payment.pay_amount,
-      pay_currency: payment.pay_currency,
-      payment_status: payment.payment_status,
-      order_id: payment.order_id,
+      ...payment,
+      payment_id: payment.payment_id || payment.id || null,
+      pay_address: payment.pay_address || payment.payin_address || null,
+      pay_amount: payment.pay_amount || payment.price_amount || null,
+      pay_currency: payment.pay_currency || payCurrency,
+      payment_status: payment.payment_status || payment.status || 'waiting',
+      invoice_url: payment.invoice_url || null,
+      order_id: payment.order_id || orderId,
     });
   } catch (error) {
     return sendJson(res, 500, {
-      error: 'Failed to create NOWPayments payment',
+      error: 'Failed to create NOWPayments invoice',
       detail: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 }
-
