@@ -98,14 +98,22 @@ function BitcoinInvoiceCard({ bitcoinPayment, copyFeedback, onCopy }) {
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Payment ID</p>
+          <p className="mt-2 break-all text-sm font-extrabold text-navy-dark">{bitcoinPayment.payment_id || 'N/A'}</p>
+        </div>
+        <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3">
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Payment Status</p>
           <p className="mt-2 text-lg font-extrabold text-navy-dark">{formatPaymentStatus(bitcoinPayment.payment_status)}</p>
         </div>
         <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3">
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Amount</p>
           <p className="mt-2 break-all text-lg font-extrabold text-navy-dark">
-            {bitcoinPayment.pay_amount || bitcoinPayment.price_amount || 'N/A'} {String(bitcoinPayment.pay_currency || 'btc').toUpperCase()}
+            {bitcoinPayment.pay_amount || bitcoinPayment.price_amount || 'N/A'}
           </p>
+        </div>
+        <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Pay Currency</p>
+          <p className="mt-2 break-all text-lg font-extrabold text-navy-dark">{String(bitcoinPayment.pay_currency || 'btc').toUpperCase()}</p>
         </div>
       </div>
 
@@ -178,6 +186,7 @@ export default function Cart() {
   const [bitcoinPayment, setBitcoinPayment] = useState(null);
   const [paymentRequestLoading, setPaymentRequestLoading] = useState(false);
   const [paymentError, setPaymentError] = useState('');
+  const [paymentSuccess, setPaymentSuccess] = useState('');
   const [copyFeedback, setCopyFeedback] = useState('');
 
   const shipping = itemCount > 0 ? 20 : 0;
@@ -218,39 +227,67 @@ export default function Cart() {
   }
 
   async function handleCreateBitcoinPayment() {
+    console.log('[Bitcoin Checkout] Pay with Bitcoin clicked');
+
     if (!formRef.current?.reportValidity()) {
+      console.log('[Bitcoin Checkout] Form validation failed before create-payment request');
+      setPaymentError('Please complete the required checkout fields before creating a Bitcoin payment.');
+      setPaymentSuccess('');
       return;
     }
 
     setPaymentRequestLoading(true);
     setPaymentError('');
+    setPaymentSuccess('');
     setCheckoutComplete(false);
     setCheckoutMessage('');
 
     try {
       const orderId = bitcoinOrderId || `order_${Date.now()}`;
+      const requestBody = {
+        orderId,
+        priceAmount: Number(total.toFixed(2)),
+        payCurrency: 'btc',
+      };
+
+      console.log('[Bitcoin Checkout] create-payment request body', requestBody);
+
       const response = await fetch('/api/create-payment', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          orderId,
-          priceAmount: Number(total.toFixed(2)),
-          payCurrency: 'btc',
-        }),
+        body: JSON.stringify(requestBody),
       });
 
-      const data = await response.json();
+      const rawResponse = await response.text();
+      let data = {};
+
+      try {
+        data = rawResponse ? JSON.parse(rawResponse) : {};
+      } catch {
+        data = rawResponse ? { error: rawResponse } : {};
+      }
+
+      console.log('[Bitcoin Checkout] create-payment response', {
+        ok: response.ok,
+        status: response.status,
+        data,
+        rawResponse,
+      });
 
       if (!response.ok) {
-        throw new Error(data?.error || data?.detail || 'Unable to create Bitcoin invoice.');
+        throw new Error(data?.detail || data?.error || rawResponse || 'Unable to create Bitcoin invoice.');
       }
 
       setBitcoinOrderId(orderId);
       setBitcoinPayment(data);
+      setPaymentSuccess('Bitcoin payment created successfully.');
     } catch (error) {
-      setPaymentError(error instanceof Error ? error.message : 'Unable to create Bitcoin invoice.');
+      const message = error instanceof Error ? error.message : 'Unable to create Bitcoin invoice.';
+      console.error('[Bitcoin Checkout] create-payment failed', message);
+      setPaymentError(message);
+      setPaymentSuccess('');
     } finally {
       setPaymentRequestLoading(false);
     }
@@ -260,6 +297,7 @@ export default function Cart() {
     setBitcoinOrderId('');
     setBitcoinPayment(null);
     setPaymentError('');
+    setPaymentSuccess('');
     setCopyFeedback('');
   }
 
@@ -382,6 +420,12 @@ export default function Cart() {
         {paymentError ? (
           <div className="mb-8 rounded-2xl border border-red-200 bg-red-50 px-6 py-5">
             <p className="text-sm font-bold text-red-700">{paymentError}</p>
+          </div>
+        ) : null}
+
+        {paymentSuccess ? (
+          <div className="mb-8 rounded-2xl border border-emerald-200 bg-emerald-50 px-6 py-5">
+            <p className="text-sm font-bold text-emerald-700">{paymentSuccess}</p>
           </div>
         ) : null}
 
@@ -645,3 +689,4 @@ export default function Cart() {
     </div>
   );
 }
+

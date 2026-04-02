@@ -7,6 +7,8 @@ export default async function handler(req, res) {
 
   try {
     const body = await readJsonBody(req);
+    console.log('[API create-payment] incoming body', body);
+
     const orderId = String(body?.orderId || `order_${Date.now()}`).trim();
     const priceAmount = Number(body?.priceAmount ?? 50);
     const payCurrency = String(body?.payCurrency || 'btc').toLowerCase();
@@ -30,6 +32,8 @@ export default async function handler(req, res) {
       },
     });
 
+    console.log('[API create-payment] NOWPayments response', payment);
+
     return sendJson(res, 200, {
       ...payment,
       payment_id: payment.payment_id || payment.id || null,
@@ -41,6 +45,8 @@ export default async function handler(req, res) {
       order_id: payment.order_id || orderId,
     });
   } catch (error) {
+    console.error('[API create-payment] failed', error);
+
     return sendJson(res, 500, {
       error: 'Failed to create NOWPayments invoice',
       detail: error instanceof Error ? error.message : 'Unknown error',
