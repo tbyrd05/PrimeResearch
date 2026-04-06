@@ -3,19 +3,22 @@ import { Link, useParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import ProductArtwork from '../components/ProductArtwork';
 import { useCart } from '../context/CartContext';
-import { products } from '../data/products';
+import { getDefaultOption, getAvailableOptions, isProductInStock, products } from '../data/products';
 
 export default function Detail() {
   const { id } = useParams();
   const product = products.find((p) => p.id === parseInt(id || '1', 10)) || products[0];
-  const [selectedOption, setSelectedOption] = useState(product.options[0]);
+  const availableOptions = getAvailableOptions(product);
+  const defaultOption = getDefaultOption(product);
+  const inStock = isProductInStock(product);
+  const [selectedOption, setSelectedOption] = useState(defaultOption);
   const [quantity, setQuantity] = useState(1);
   const { addItem } = useCart();
 
   useEffect(() => {
-    setSelectedOption(product.options[0]);
+    setSelectedOption(defaultOption);
     setQuantity(1);
-  }, [product]);
+  }, [defaultOption, product]);
 
   return (
     <div className="min-h-screen bg-neutral-50 font-sans">
@@ -47,6 +50,9 @@ export default function Detail() {
 
               <div className="flex items-baseline gap-4 mb-8">
                 <span className="text-3xl font-black text-primary sm:text-4xl">{selectedOption.price}</span>
+                <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${inStock ? 'bg-emerald-50 text-emerald-700' : 'bg-neutral-100 text-neutral-500'}`}>
+                  {inStock ? 'In Stock' : 'Out of Stock'}
+                </span>
               </div>
 
               {product.options.length > 1 && (
@@ -57,13 +63,16 @@ export default function Detail() {
                       <button
                         key={option.size}
                         onClick={() => setSelectedOption(option)}
+                        disabled={option.inStock === false}
                         className={`rounded-lg border px-4 py-3 text-xs font-bold uppercase tracking-widest transition-all sm:px-6 ${
                           selectedOption.size === option.size
                             ? 'bg-navy-dark text-white border-navy-dark shadow-md'
-                            : 'bg-neutral-50 text-navy-dark border-neutral-200 hover:border-navy-dark'
+                            : option.inStock === false
+                              ? 'bg-neutral-100 text-neutral-400 border-neutral-200 cursor-not-allowed'
+                              : 'bg-neutral-50 text-navy-dark border-neutral-200 hover:border-navy-dark'
                         }`}
                       >
-                        {option.size}
+                        {option.size} {option.inStock === false ? '(Out)' : ''}
                       </button>
                     ))}
                   </div>
@@ -80,6 +89,7 @@ export default function Detail() {
                   <button
                     type="button"
                     onClick={() => setQuantity((current) => Math.max(1, current - 1))}
+                    disabled={!inStock}
                     className="px-4 py-3 text-navy-dark hover:bg-neutral-100 transition-colors"
                   >
                     <span className="material-symbols-outlined text-lg">remove</span>
@@ -89,11 +99,13 @@ export default function Detail() {
                     min="1"
                     value={quantity}
                     onChange={(event) => setQuantity(Math.max(1, Number(event.target.value) || 1))}
+                    disabled={!inStock}
                     className="w-16 border-x border-neutral-200 py-3 text-center font-bold text-navy-dark outline-none sm:w-20"
                   />
                   <button
                     type="button"
                     onClick={() => setQuantity((current) => current + 1)}
+                    disabled={!inStock}
                     className="px-4 py-3 text-navy-dark hover:bg-neutral-100 transition-colors"
                   >
                     <span className="material-symbols-outlined text-lg">add</span>
@@ -112,10 +124,11 @@ export default function Detail() {
             <div className="mt-auto space-y-4">
               <button
                 onClick={() => addItem(product, selectedOption, quantity)}
-                className="flex w-full items-center justify-center gap-3 rounded-xl bg-navy-dark px-6 py-4 text-[11px] font-black uppercase tracking-[0.18em] text-white shadow-xl shadow-navy-dark/10 transition-all hover:bg-primary active:scale-[0.98] sm:px-8 sm:py-5 sm:text-xs"
+                disabled={!availableOptions.some((option) => option.size === selectedOption.size)}
+                className="flex w-full items-center justify-center gap-3 rounded-xl bg-navy-dark px-6 py-4 text-[11px] font-black uppercase tracking-[0.18em] text-white shadow-xl shadow-navy-dark/10 transition-all hover:bg-primary active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:shadow-none sm:px-8 sm:py-5 sm:text-xs"
               >
                 <span className="material-symbols-outlined">add_shopping_cart</span>
-                Add to Research
+                {availableOptions.some((option) => option.size === selectedOption.size) ? 'Add to Research' : 'Out of Stock'}
               </button>
               <Link to="/lab-results" className="block w-full rounded-xl border-2 border-neutral-200 py-4 text-center text-[11px] font-bold uppercase tracking-widest text-neutral-500 transition-all hover:border-navy-dark hover:text-navy-dark sm:text-xs">
                 Download Certificate of Analysis (PDF)
