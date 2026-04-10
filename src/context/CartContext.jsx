@@ -27,6 +27,10 @@ export function CartProvider({ children }) {
     subtotal: items.reduce((total, item) => total + (parsePrice(item.price) * item.quantity), 0),
     formattedSubtotal: formatPrice(items.reduce((total, item) => total + (parsePrice(item.price) * item.quantity), 0)),
     addItem(product, option, quantity = 1) {
+      if (option?.inStock === false) {
+        return;
+      }
+
       const safeQuantity = Math.max(1, Number(quantity) || 1);
       setItems((current) => {
         const existing = current.find((item) => item.productId === product.id && item.size === option.size);

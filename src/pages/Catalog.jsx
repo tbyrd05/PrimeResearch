@@ -167,9 +167,13 @@ export default function Catalog() {
                     <button
                       onClick={() => addItem(product, defaultOption, getQuantity(product.id))}
                       disabled={!inStock}
-                      className="bg-navy-dark hover:bg-navy-dark/90 text-white p-3 rounded-lg transition-all active:scale-95 flex items-center justify-center disabled:cursor-not-allowed disabled:bg-neutral-300"
+                      className="min-w-[9.5rem] bg-navy-dark hover:bg-navy-dark/90 text-white px-3 rounded-lg transition-all active:scale-95 flex items-center justify-center disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:text-neutral-500"
                     >
-                      <span className="material-symbols-outlined">add_shopping_cart</span>
+                      {inStock ? (
+                        <span className="material-symbols-outlined">add_shopping_cart</span>
+                      ) : (
+                        <span className="text-[10px] font-black uppercase tracking-[0.18em]">Out of Stock</span>
+                      )}
                     </button>
                   </div>
                 </div>

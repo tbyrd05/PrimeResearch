@@ -11,6 +11,12 @@ import { paymentConfig } from '../data/paymentConfig';
 
 const TERMINAL_PAYMENT_STATUSES = new Set(['finished', 'confirmed', 'failed', 'expired']);
 const CONFIRMED_PAYMENT_STATUSES = new Set(['finished', 'confirmed']);
+const DISCOUNT_CODES = {
+  BYRD: {
+    code: 'BYRD',
+    percentageOff: 0.15,
+  },
+};
 
 function PaymentQrCard({ src, tag }) {
   const [hasError, setHasError] = useState(false);
@@ -237,6 +243,9 @@ export default function Cart() {
   });
   const [checkoutComplete, setCheckoutComplete] = useState(false);
   const [checkoutMessage, setCheckoutMessage] = useState('');
+  const [discountCodeInput, setDiscountCodeInput] = useState('');
+  const [appliedDiscountCode, setAppliedDiscountCode] = useState('');
+  const [discountMessage, setDiscountMessage] = useState('');
   const [bitcoinOrderId, setBitcoinOrderId] = useState('');
   const [bitcoinPayment, setBitcoinPayment] = useState(null);
   const [paymentRequestLoading, setPaymentRequestLoading] = useState(false);
@@ -245,7 +254,11 @@ export default function Cart() {
   const [copyFeedback, setCopyFeedback] = useState('');
 
   const shipping = itemCount > 0 ? 20 : 0;
-  const total = subtotal + shipping;
+  const normalizedDiscountCode = appliedDiscountCode.trim().toUpperCase();
+  const activeDiscount = DISCOUNT_CODES[normalizedDiscountCode] || null;
+  const discountAmount = activeDiscount ? Number((subtotal * activeDiscount.percentageOff).toFixed(2)) : 0;
+  const discountedSubtotal = Math.max(0, subtotal - discountAmount);
+  const total = discountedSubtotal + shipping;
   const cartItems = useMemo(
     () => items.map((item) => ({
       ...item,
@@ -261,6 +274,33 @@ export default function Cart() {
   const bitcoinPaymentConfirmed = CONFIRMED_PAYMENT_STATUSES.has(normalizedBitcoinStatus);
   const bitcoinPaymentTerminal = TERMINAL_PAYMENT_STATUSES.has(normalizedBitcoinStatus);
   const cartLocked = paymentMethod === 'bitcoin' && bitcoinPaymentCreated && !bitcoinPaymentConfirmed;
+
+  function applyDiscountCode() {
+    const normalizedCode = discountCodeInput.trim().toUpperCase();
+
+    if (!normalizedCode) {
+      setAppliedDiscountCode('');
+      setDiscountMessage('Enter a discount code to apply it.');
+      return;
+    }
+
+    const matchingDiscount = DISCOUNT_CODES[normalizedCode];
+    if (!matchingDiscount) {
+      setAppliedDiscountCode('');
+      setDiscountMessage('That discount code is not valid.');
+      return;
+    }
+
+    setAppliedDiscountCode(matchingDiscount.code);
+    setDiscountCodeInput(matchingDiscount.code);
+    setDiscountMessage(`${matchingDiscount.code} applied for ${Math.round(matchingDiscount.percentageOff * 100)}% off products only. Shipping is not discounted.`);
+  }
+
+  function removeDiscountCode() {
+    setAppliedDiscountCode('');
+    setDiscountCodeInput('');
+    setDiscountMessage('Discount code removed.');
+  }
 
   useEffect(() => {
     setCheckout((current) => ({
@@ -308,6 +348,8 @@ export default function Cart() {
       paidAt: bitcoinPaymentConfirmed ? new Date().toLocaleString() : null,
       items: cartItems,
       subtotal: formattedSubtotal,
+      discountCode: activeDiscount?.code || '',
+      discount: formatPrice(discountAmount),
       shipping: formatPrice(shipping),
       total: formatPrice(total),
     };
@@ -557,6 +599,8 @@ export default function Cart() {
       paymentStatus: 'Awaiting Confirmation',
       items: cartItems,
       subtotal: formattedSubtotal,
+      discountCode: activeDiscount?.code || '',
+      discount: formatPrice(discountAmount),
       shipping: formatPrice(shipping),
       total: formatPrice(total),
       status: 'Pending',
@@ -706,6 +750,42 @@ export default function Cart() {
                     <span>Subtotal</span>
                     <span>{formattedSubtotal}</span>
                   </div>
+                  <div className="space-y-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+                    <div className="flex flex-col gap-3 sm:flex-row">
+                      <input
+                        type="text"
+                        value={discountCodeInput}
+                        onChange={(event) => setDiscountCodeInput(event.target.value)}
+                        placeholder="Discount code"
+                        className="flex-1 rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold uppercase outline-none focus:border-primary"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={applyDiscountCode}
+                          className="rounded-xl bg-navy-dark px-4 py-3 text-[10px] font-black uppercase tracking-[0.18em] text-white transition-colors hover:bg-primary"
+                        >
+                          Apply
+                        </button>
+                        {activeDiscount ? (
+                          <button
+                            type="button"
+                            onClick={removeDiscountCode}
+                            className="rounded-xl border border-neutral-200 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-[0.18em] text-navy-dark transition-colors hover:border-primary hover:text-primary"
+                          >
+                            Remove
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
+                    <p className={`text-xs font-bold ${activeDiscount ? 'text-emerald-700' : 'text-neutral-500'}`}>
+                      {discountMessage || 'Use code BYRD for 15% off products. Shipping is not discounted.'}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-between text-neutral-500">
+                    <span>Discount</span>
+                    <span>{discountAmount > 0 ? `-${formatPrice(discountAmount)}` : formatPrice(0)}</span>
+                  </div>
                   <div className="flex items-center justify-between text-neutral-500">
                     <span>Shipping</span>
                     <span>{formatPrice(shipping)}</span>
@@ -817,9 +897,13 @@ export default function Cart() {
                   </div>
                 ) : null}
 
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
+                  Make sure to press complete order after payment is made.
+                </div>
+
                 {paymentMethod !== 'bitcoin' ? (
                   <button type="submit" className="w-full rounded-xl bg-navy-dark px-6 py-4 text-xs font-black uppercase tracking-[0.18em] text-white transition-colors hover:bg-primary">
-                    Complete Checkout
+                    Complete Order
                   </button>
                 ) : null}
               </form>

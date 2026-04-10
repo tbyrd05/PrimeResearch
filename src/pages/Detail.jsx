@@ -111,6 +111,11 @@ export default function Detail() {
                     <span className="material-symbols-outlined text-lg">add</span>
                   </button>
                 </div>
+                {!availableOptions.some((option) => option.size === selectedOption.size) ? (
+                  <p className="mt-3 text-sm font-medium text-neutral-500">
+                    This product can still be viewed while out of stock, but it cannot be added to the cart until inventory returns.
+                  </p>
+                ) : null}
               </div>
             </div>
 

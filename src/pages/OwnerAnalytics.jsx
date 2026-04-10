@@ -101,7 +101,8 @@ export default function OwnerAnalytics() {
     const pendingOrders = orders.filter((order) => order.status !== 'Sent').length;
     const sentOrders = orders.filter((order) => order.status === 'Sent').length;
     const grossSales = orders.reduce((sum, order) => sum + parseCurrency(order.total), 0);
-    const productRevenue = orders.reduce((sum, order) => sum + parseCurrency(order.subtotal), 0);
+    const totalDiscounts = orders.reduce((sum, order) => sum + parseCurrency(order.discount), 0);
+    const productRevenue = orders.reduce((sum, order) => sum + Math.max(0, parseCurrency(order.subtotal) - parseCurrency(order.discount)), 0);
     const shippingCollected = orders.reduce((sum, order) => sum + parseCurrency(order.shipping), 0);
     const averageOrderValue = totalOrders ? grossSales / totalOrders : 0;
     const cashAppOrders = orders.filter((order) => order.payment?.label === 'Cash App').length;
@@ -113,6 +114,7 @@ export default function OwnerAnalytics() {
       sentOrders,
       grossSales,
       productRevenue,
+      totalDiscounts,
       shippingCollected,
       averageOrderValue,
       cashAppOrders,
@@ -141,7 +143,7 @@ export default function OwnerAnalytics() {
 
         <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard label="Gross Sales" value={formatCurrency(stats.grossSales)} description="Total of all placed orders including shipping." />
-          <MetricCard label="Product Revenue" value={formatCurrency(stats.productRevenue)} description="Sales collected from products before shipping." />
+          <MetricCard label="Product Revenue" value={formatCurrency(stats.productRevenue)} description="Sales collected from products after discounts and before shipping." />
           <MetricCard label="Shipping Collected" value={formatCurrency(stats.shippingCollected)} description="Total shipping charges collected from customers." />
           <MetricCard label="Average Order" value={formatCurrency(stats.averageOrderValue)} description="Average order value across all placed orders." />
         </section>
@@ -150,7 +152,7 @@ export default function OwnerAnalytics() {
           <MetricCard label="Total Orders" value={String(stats.totalOrders)} description="All placed orders in the system." />
           <MetricCard label="Pending Orders" value={String(stats.pendingOrders)} description="Orders waiting to be marked as sent." />
           <MetricCard label="Sent Orders" value={String(stats.sentOrders)} description="Orders you have already marked as sent." />
-          <MetricCard label="Gross Profit" value={formatCurrency(stats.productRevenue)} description="Current gross revenue before any product-cost deductions." />
+          <MetricCard label="Discounts Given" value={formatCurrency(stats.totalDiscounts)} description="Total coupon discounts applied to products." />
         </section>
 
         <section className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[0.7fr_1.3fr]">

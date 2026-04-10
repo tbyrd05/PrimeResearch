@@ -80,10 +80,16 @@ export default function Orders() {
         </div>
 
         <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+          <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-4">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.2em] text-neutral-400 mb-2">Order Subtotal</p>
               <p className="font-bold text-navy-dark">{order.subtotal}</p>
+            </div>
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-neutral-400 mb-2">Discount</p>
+              <p className="font-bold text-navy-dark">
+                {order.discountCode ? `${order.discountCode} (${order.discount || '$0.00'})` : (order.discount || '$0.00')}
+              </p>
             </div>
             <div>
               <p className="text-xs font-black uppercase tracking-[0.2em] text-neutral-400 mb-2">Shipping</p>
