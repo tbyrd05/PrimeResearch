@@ -119,7 +119,7 @@ export default function Catalog() {
             <p className="text-neutral-500 font-medium">Try another search term from the top navigation.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4 sm:gap-8 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 min-[380px]:grid-cols-2 sm:gap-8 xl:grid-cols-3">
             {sortedProducts.map((product) => {
               const defaultOption = getDefaultOption(product);
               const inStock = isProductInStock(product);
@@ -128,7 +128,7 @@ export default function Catalog() {
 
               return (
               <div key={product.id} className="group bg-white border border-neutral-200 rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300">
-                <div className="bg-white p-4 pb-2">
+                <div className="bg-white p-3 pb-2 sm:p-4">
                   <ProductArtwork
                     product={product}
                     compact
@@ -137,10 +137,12 @@ export default function Catalog() {
                   />
                 </div>
 
-                <div className="p-4 sm:p-6">
+                <div className="p-3 sm:p-6">
                   <div className="flex items-start justify-between gap-3 mb-2">
-                    <h3 className="min-w-0 break-words text-base sm:text-xl font-extrabold text-navy-dark tracking-tight leading-tight uppercase">{product.name}</h3>
-                    <span className="shrink-0 text-sm sm:text-xl font-black text-primary">{catalogPriceLabel}</span>
+                    <h3 className="min-w-0 text-[13px] font-extrabold text-navy-dark tracking-tight leading-tight uppercase break-normal sm:text-xl">
+                      {product.name}
+                    </h3>
+                    <span className="shrink-0 text-[13px] sm:text-xl font-black text-primary">{catalogPriceLabel}</span>
                   </div>
                   <p className="text-[10px] sm:text-xs font-bold text-neutral-400 uppercase tracking-widest mb-4 sm:mb-6 break-all">CAS: {product.cas}</p>
                   <div className="mb-4">
@@ -184,7 +186,7 @@ export default function Catalog() {
                     </div>
                   )}
 
-                  <div className="flex gap-3">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
                     <Link
                       to={`/detail/${product.id}`}
                       className="flex-1 text-center py-3 border border-neutral-200 rounded-lg text-[10px] sm:text-sm font-bold text-navy-dark hover:bg-neutral-50 transition-colors uppercase tracking-widest"
@@ -194,7 +196,7 @@ export default function Catalog() {
                     {hasMultipleOptions ? (
                       <Link
                         to={`/detail/${product.id}`}
-                        className="min-w-[7.5rem] bg-navy-dark hover:bg-navy-dark/90 text-white px-3 rounded-lg transition-all active:scale-95 flex items-center justify-center text-[10px] sm:text-xs font-black uppercase tracking-[0.18em]"
+                        className="min-h-[2.75rem] sm:min-w-[7.5rem] bg-navy-dark hover:bg-navy-dark/90 text-white px-3 rounded-lg transition-all active:scale-95 flex items-center justify-center text-[10px] sm:text-xs font-black uppercase tracking-[0.18em]"
                       >
                         Select Options
                       </Link>
@@ -202,7 +204,7 @@ export default function Catalog() {
                       <button
                         onClick={() => addItem(product, defaultOption, getQuantity(product.id))}
                         disabled={!inStock}
-                        className="min-w-[7.5rem] bg-navy-dark hover:bg-navy-dark/90 text-white px-3 rounded-lg transition-all active:scale-95 flex items-center justify-center disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:text-neutral-500"
+                        className="min-h-[2.75rem] sm:min-w-[7.5rem] bg-navy-dark hover:bg-navy-dark/90 text-white px-3 rounded-lg transition-all active:scale-95 flex items-center justify-center disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:text-neutral-500"
                       >
                         {inStock ? (
                           <span className="material-symbols-outlined">add_shopping_cart</span>
