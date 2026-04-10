@@ -9,6 +9,8 @@ export default function Home() {
   const redirectTo = useMemo(() => location.state?.from || '/catalog', [location.state]);
   const [mode, setMode] = useState('signin');
   const [errorMessage, setErrorMessage] = useState('');
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const [ageDeclined, setAgeDeclined] = useState(false);
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -64,6 +66,44 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-slate-dark font-sans text-white">
+      {!ageConfirmed ? (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-dark/85 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-navy-dark px-6 py-8 shadow-2xl sm:px-8">
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-primary">Age Verification</p>
+            <h2 className="mt-3 text-3xl font-extrabold tracking-tighter text-white">You must be 21 or older to enter this site.</h2>
+            <p className="mt-4 text-sm font-medium leading-relaxed text-slate-300">
+              Are you at least 21 years old?
+            </p>
+
+            {ageDeclined ? (
+              <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                You must be 21 or older to enter this site.
+              </div>
+            ) : null}
+
+            <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setAgeConfirmed(true);
+                  setAgeDeclined(false);
+                }}
+                className="rounded-xl bg-primary px-6 py-4 text-xs font-black uppercase tracking-[0.18em] text-white transition-colors hover:bg-primary-hover"
+              >
+                Yes, I am
+              </button>
+              <button
+                type="button"
+                onClick={() => setAgeDeclined(true)}
+                className="rounded-xl border border-white/15 bg-white/5 px-6 py-4 text-xs font-black uppercase tracking-[0.18em] text-white transition-colors hover:bg-white/10"
+              >
+                No
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <div
         className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-40 grayscale-[0.2]"
         style={{ backgroundImage: "url('/onyx_style_bg_1774467782051.png')" }}

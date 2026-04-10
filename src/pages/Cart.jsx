@@ -779,7 +779,7 @@ export default function Cart() {
                       </div>
                     </div>
                     <p className={`text-xs font-bold ${activeDiscount ? 'text-emerald-700' : 'text-neutral-500'}`}>
-                      {discountMessage || 'Use code BYRD for 15% off products. Shipping is not discounted.'}
+                      {discountMessage || 'Enter a discount code if you have one.'}
                     </p>
                   </div>
                   <div className="flex items-center justify-between text-neutral-500">

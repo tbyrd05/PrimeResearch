@@ -5,6 +5,25 @@ import ProductArtwork from '../components/ProductArtwork';
 import { useCart } from '../context/CartContext';
 import { getBasePrice, getDefaultOption, isProductInStock, products } from '../data/products';
 
+function parsePrice(price) {
+  return Number.parseFloat(String(price || '$0').replace(/[^0-9.]/g, '')) || 0;
+}
+
+function getCatalogPriceLabel(product) {
+  if (product.options.length <= 1) {
+    return getDefaultOption(product).price;
+  }
+
+  const prices = product.options
+    .map((option) => parsePrice(option.price))
+    .sort((a, b) => a - b);
+
+  const lowest = prices[0] || 0;
+  const highest = prices[prices.length - 1] || 0;
+
+  return `$${lowest.toFixed(2)}-$${highest.toFixed(2)}`;
+}
+
 export default function Catalog() {
   const [sortBy, setSortBy] = useState('newest');
   const [quantities, setQuantities] = useState({});
@@ -100,10 +119,12 @@ export default function Catalog() {
             <p className="text-neutral-500 font-medium">Try another search term from the top navigation.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-8">
+          <div className="grid grid-cols-2 gap-4 sm:gap-8 xl:grid-cols-3">
             {sortedProducts.map((product) => {
               const defaultOption = getDefaultOption(product);
               const inStock = isProductInStock(product);
+              const hasMultipleOptions = product.options.length > 1;
+              const catalogPriceLabel = getCatalogPriceLabel(product);
 
               return (
               <div key={product.id} className="group bg-white border border-neutral-200 rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300">
@@ -118,63 +139,78 @@ export default function Catalog() {
 
                 <div className="p-4 sm:p-6">
                   <div className="flex items-start justify-between gap-3 mb-2">
-                    <h3 className="min-w-0 break-words text-lg sm:text-xl font-extrabold text-navy-dark tracking-tight leading-tight uppercase">{product.name}</h3>
-                    <span className="shrink-0 text-lg sm:text-xl font-black text-primary">{defaultOption.price}</span>
+                    <h3 className="min-w-0 break-words text-base sm:text-xl font-extrabold text-navy-dark tracking-tight leading-tight uppercase">{product.name}</h3>
+                    <span className="shrink-0 text-sm sm:text-xl font-black text-primary">{catalogPriceLabel}</span>
                   </div>
-                  <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-5 sm:mb-6 break-all">CAS: {product.cas}</p>
+                  <p className="text-[10px] sm:text-xs font-bold text-neutral-400 uppercase tracking-widest mb-4 sm:mb-6 break-all">CAS: {product.cas}</p>
                   <div className="mb-4">
                     <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${inStock ? 'bg-emerald-50 text-emerald-700' : 'bg-neutral-100 text-neutral-500'}`}>
                       {inStock ? 'In Stock' : 'Out of Stock'}
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between gap-3 mb-4">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Quantity</span>
-                    <div className="inline-flex max-w-full items-center border border-neutral-200 rounded-lg overflow-hidden">
-                      <button
-                        type="button"
-                        onClick={() => setQuantity(product.id, getQuantity(product.id) - 1)}
-                        className="px-3 py-2 text-navy-dark hover:bg-neutral-50 transition-colors"
-                      >
-                        <span className="material-symbols-outlined text-lg">remove</span>
-                      </button>
-                      <input
-                        type="number"
-                        min="1"
-                        value={getQuantity(product.id)}
-                        onChange={(event) => setQuantity(product.id, event.target.value)}
-                        disabled={!inStock}
-                        className="w-14 border-x border-neutral-200 text-center text-sm font-bold text-navy-dark py-2 outline-none"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setQuantity(product.id, getQuantity(product.id) + 1)}
-                        disabled={!inStock}
-                        className="px-3 py-2 text-navy-dark hover:bg-neutral-50 transition-colors"
-                      >
-                        <span className="material-symbols-outlined text-lg">add</span>
-                      </button>
+                  {!hasMultipleOptions ? (
+                    <div className="flex items-center justify-between gap-3 mb-4">
+                      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Quantity</span>
+                      <div className="inline-flex max-w-full items-center border border-neutral-200 rounded-lg overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() => setQuantity(product.id, getQuantity(product.id) - 1)}
+                          className="px-3 py-2 text-navy-dark hover:bg-neutral-50 transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-lg">remove</span>
+                        </button>
+                        <input
+                          type="number"
+                          min="1"
+                          value={getQuantity(product.id)}
+                          onChange={(event) => setQuantity(product.id, event.target.value)}
+                          disabled={!inStock}
+                          className="w-14 border-x border-neutral-200 text-center text-sm font-bold text-navy-dark py-2 outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setQuantity(product.id, getQuantity(product.id) + 1)}
+                          disabled={!inStock}
+                          className="px-3 py-2 text-navy-dark hover:bg-neutral-50 transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-lg">add</span>
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="mb-4 rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-3 text-center text-[10px] font-black uppercase tracking-[0.18em] text-neutral-500 sm:text-xs">
+                      Multiple sizes available
+                    </div>
+                  )}
 
                   <div className="flex gap-3">
                     <Link
                       to={`/detail/${product.id}`}
-                      className="flex-1 text-center py-3 border border-neutral-200 rounded-lg text-xs sm:text-sm font-bold text-navy-dark hover:bg-neutral-50 transition-colors uppercase tracking-widest"
+                      className="flex-1 text-center py-3 border border-neutral-200 rounded-lg text-[10px] sm:text-sm font-bold text-navy-dark hover:bg-neutral-50 transition-colors uppercase tracking-widest"
                     >
                       View Details
                     </Link>
-                    <button
-                      onClick={() => addItem(product, defaultOption, getQuantity(product.id))}
-                      disabled={!inStock}
-                      className="min-w-[9.5rem] bg-navy-dark hover:bg-navy-dark/90 text-white px-3 rounded-lg transition-all active:scale-95 flex items-center justify-center disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:text-neutral-500"
-                    >
-                      {inStock ? (
-                        <span className="material-symbols-outlined">add_shopping_cart</span>
-                      ) : (
-                        <span className="text-[10px] font-black uppercase tracking-[0.18em]">Out of Stock</span>
-                      )}
-                    </button>
+                    {hasMultipleOptions ? (
+                      <Link
+                        to={`/detail/${product.id}`}
+                        className="min-w-[7.5rem] bg-navy-dark hover:bg-navy-dark/90 text-white px-3 rounded-lg transition-all active:scale-95 flex items-center justify-center text-[10px] sm:text-xs font-black uppercase tracking-[0.18em]"
+                      >
+                        Select Options
+                      </Link>
+                    ) : (
+                      <button
+                        onClick={() => addItem(product, defaultOption, getQuantity(product.id))}
+                        disabled={!inStock}
+                        className="min-w-[7.5rem] bg-navy-dark hover:bg-navy-dark/90 text-white px-3 rounded-lg transition-all active:scale-95 flex items-center justify-center disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:text-neutral-500"
+                      >
+                        {inStock ? (
+                          <span className="material-symbols-outlined">add_shopping_cart</span>
+                        ) : (
+                          <span className="text-[10px] font-black uppercase tracking-[0.18em]">Out of Stock</span>
+                        )}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
