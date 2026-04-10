@@ -3,17 +3,17 @@ import { Link, useParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import ProductArtwork from '../components/ProductArtwork';
 import { useCart } from '../context/CartContext';
-import { getDefaultOption, getAvailableOptions, isProductInStock, products } from '../data/products';
+import { getDefaultOption, isProductInStock, products } from '../data/products';
 
 export default function Detail() {
   const { id } = useParams();
   const product = products.find((p) => p.id === parseInt(id || '1', 10)) || products[0];
-  const availableOptions = getAvailableOptions(product);
   const defaultOption = getDefaultOption(product);
   const inStock = isProductInStock(product);
   const [selectedOption, setSelectedOption] = useState(defaultOption);
   const [quantity, setQuantity] = useState(1);
   const { addItem } = useCart();
+  const selectedOptionInStock = selectedOption?.inStock !== false;
 
   useEffect(() => {
     setSelectedOption(defaultOption);
@@ -62,13 +62,13 @@ export default function Detail() {
                     {product.options.map((option) => (
                       <button
                         key={option.size}
+                        type="button"
                         onClick={() => setSelectedOption(option)}
-                        disabled={option.inStock === false}
                         className={`rounded-lg border px-4 py-3 text-xs font-bold uppercase tracking-widest transition-all sm:px-6 ${
                           selectedOption.size === option.size
                             ? 'bg-navy-dark text-white border-navy-dark shadow-md'
                             : option.inStock === false
-                              ? 'bg-neutral-100 text-neutral-400 border-neutral-200 cursor-not-allowed'
+                              ? 'bg-neutral-100 text-neutral-500 border-neutral-200 hover:border-neutral-300'
                               : 'bg-neutral-50 text-navy-dark border-neutral-200 hover:border-navy-dark'
                         }`}
                       >
@@ -111,9 +111,9 @@ export default function Detail() {
                     <span className="material-symbols-outlined text-lg">add</span>
                   </button>
                 </div>
-                {!availableOptions.some((option) => option.size === selectedOption.size) ? (
+                {!selectedOptionInStock ? (
                   <p className="mt-3 text-sm font-medium text-neutral-500">
-                    This product can still be viewed while out of stock, but it cannot be added to the cart until inventory returns.
+                    This size is currently out of stock. Customers can still view its price, but it cannot be added to the cart until inventory returns.
                   </p>
                 ) : null}
               </div>
@@ -129,11 +129,11 @@ export default function Detail() {
             <div className="mt-auto space-y-4">
               <button
                 onClick={() => addItem(product, selectedOption, quantity)}
-                disabled={!availableOptions.some((option) => option.size === selectedOption.size)}
+                disabled={!selectedOptionInStock}
                 className="flex w-full items-center justify-center gap-3 rounded-xl bg-navy-dark px-6 py-4 text-[11px] font-black uppercase tracking-[0.18em] text-white shadow-xl shadow-navy-dark/10 transition-all hover:bg-primary active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:shadow-none sm:px-8 sm:py-5 sm:text-xs"
               >
                 <span className="material-symbols-outlined">add_shopping_cart</span>
-                {availableOptions.some((option) => option.size === selectedOption.size) ? 'Add to Research' : 'Out of Stock'}
+                {selectedOptionInStock ? 'Add to Research' : 'Out of Stock'}
               </button>
               <Link to="/lab-results" className="block w-full rounded-xl border-2 border-neutral-200 py-4 text-center text-[11px] font-bold uppercase tracking-widest text-neutral-500 transition-all hover:border-navy-dark hover:text-navy-dark sm:text-xs">
                 Download Certificate of Analysis (PDF)
