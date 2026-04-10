@@ -152,15 +152,15 @@ export default function Catalog() {
                   </div>
 
                   {!hasMultipleOptions ? (
-                    <div className="flex items-center justify-between gap-3 mb-4">
+                    <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                       <span className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Quantity</span>
-                      <div className="inline-flex max-w-full items-center border border-neutral-200 rounded-lg overflow-hidden">
+                      <div className="inline-flex w-full max-w-full items-center justify-center overflow-hidden rounded-lg border border-neutral-200 sm:w-auto">
                         <button
                           type="button"
                           onClick={() => setQuantity(product.id, getQuantity(product.id) - 1)}
-                          className="px-3 py-2 text-navy-dark hover:bg-neutral-50 transition-colors"
+                          className="px-2 py-2 text-navy-dark transition-colors hover:bg-neutral-50 sm:px-3"
                         >
-                          <span className="material-symbols-outlined text-lg">remove</span>
+                          <span className="material-symbols-outlined text-base sm:text-lg">remove</span>
                         </button>
                         <input
                           type="number"
@@ -168,15 +168,15 @@ export default function Catalog() {
                           value={getQuantity(product.id)}
                           onChange={(event) => setQuantity(product.id, event.target.value)}
                           disabled={!inStock}
-                          className="w-14 border-x border-neutral-200 text-center text-sm font-bold text-navy-dark py-2 outline-none"
+                          className="w-10 border-x border-neutral-200 py-2 text-center text-sm font-bold text-navy-dark outline-none sm:w-14"
                         />
                         <button
                           type="button"
                           onClick={() => setQuantity(product.id, getQuantity(product.id) + 1)}
                           disabled={!inStock}
-                          className="px-3 py-2 text-navy-dark hover:bg-neutral-50 transition-colors"
+                          className="px-2 py-2 text-navy-dark transition-colors hover:bg-neutral-50 sm:px-3"
                         >
-                          <span className="material-symbols-outlined text-lg">add</span>
+                          <span className="material-symbols-outlined text-base sm:text-lg">add</span>
                         </button>
                       </div>
                     </div>
