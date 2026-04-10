@@ -138,11 +138,11 @@ export default function Catalog() {
                 </div>
 
                 <div className="p-3 sm:p-6">
-                  <div className="flex items-start justify-between gap-3 mb-2">
-                    <h3 className="min-w-0 text-[13px] font-extrabold text-navy-dark tracking-tight leading-tight uppercase break-normal sm:text-xl">
+                  <div className="mb-2 flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+                    <h3 className="min-w-0 text-[13px] font-extrabold text-navy-dark tracking-tight leading-tight uppercase sm:text-xl">
                       {product.name}
                     </h3>
-                    <span className="shrink-0 text-[13px] sm:text-xl font-black text-primary">{catalogPriceLabel}</span>
+                    <span className="text-[13px] sm:text-xl font-black text-primary sm:shrink-0">{catalogPriceLabel}</span>
                   </div>
                   <p className="text-[10px] sm:text-xs font-bold text-neutral-400 uppercase tracking-widest mb-4 sm:mb-6 break-all">CAS: {product.cas}</p>
                   <div className="mb-4">
